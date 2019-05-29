@@ -282,7 +282,38 @@ def get_galactic_to_gcrs_rotation_matrix():
 
 ######## Things derived from beam functions
 
-def beam_func_to_Omegas(nu_axis, beam_func, nside=128, beam_index=0):
+def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
+    
+    ttheta, pphi = pyssht.sample_positions(L_use, Method='MWSS', Grid=True)
+
+    alt = np.pi/2. - ttheta.flatten()
+    az = pphi.flatten()
+
+    v_inds = np.where(alt > 0.)[0]
+
+    alt_v = alt[v_inds]
+    az_v = az[v_inds]
+
+    Omega = np.zeros_like(nu_hz)
+    Omegapp = np.zeros_like(nu_hz)
+
+    for ii in range(nu_hz.size):
+        nu_i = nu_hz[ii]
+
+        J_i = np.zeros((alt.size, 2, 2), dtype=np.complex128)
+        J_i[v_inds] = beam_func(beam_index, nu_i, alt_v, az_v)
+
+        B = np.abs(J_i[:,0,0])**2. + np.abs(J_i[:,0,1])**2.
+        B = B.reshape(ttheta.shape)
+
+        Blm = pyssht.forward(B, L_use, Spin=0, Method='MWSS', Reality=True)
+
+        Omega[ii] = np.sqrt(4*np.pi)*np.real(Blm[0])
+        Omegapp[ii] = np.sum(np.abs(Blm)**2.)
+
+    return Omega, Omegapp
+
+def beam_func_to_Omegas_healpix_sum(nu_axis, beam_func, nside=128, beam_index=0):
     npix = 12*nside**2
     hpxidx = np.arange(npix)
     hbeta, halpha = hp.pix2ang(nside, hpxidx)
