@@ -110,11 +110,21 @@ class VisibilityCalculation(object):
 
         self.Vm = 0.5*Vm
 
-    def compute_time_series(self, time_sample_jds=None):
+    def compute_time_series(self, time_sample_jds=None, integration_time=None):
 
         if time_sample_jds is not None:
             self.time_sample_jds = time_sample_jds
             self.parameters['time_sample_jds'] = time_sample_jds
+
+        if integration_time is not None:
+
+            if integration_time == 0:
+
+                print "Input integration time is identically zero, changing to 1e-9 seconds."
+                integration_time = 1e-9 # seconds
+
+            self.integration_time = integration_time
+            self.parameters['integration_time'] = integration_time
 
         if getattr(self, 'Vm', None) is None:
             self.compute_fourier_modes()
@@ -126,7 +136,7 @@ class VisibilityCalculation(object):
 
         self.parameters['delta_era_axis'] = delta_era_axis
 
-        if self.integration_time == 0.:
+        if self.integration_time <= 1e-9:
 
             self.V = rime_funcs.parallel_visibility_dft_from_mmodes(delta_era_axis, self.Vm)
 
