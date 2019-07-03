@@ -1,7 +1,9 @@
 import numpy as np
 import numba as nb
+from scipy import interpolate
 
 from itertools import izip
+import h5py
 
 import pyssht
 import ssht_numba as sshtn
@@ -254,6 +256,19 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0., ssht_index=True):
         flm = Ilm_init
 
     return flm
+
+def diffuse_sky_model_egsm_preview(nu_axis):
+    egsm_harmonics_file = '/users/zmartino/zmartino/eGSM_preview/egsm_harmonics.h5'
+    with h5py.File(egsm_harmonics_file, 'r') as h5f:
+        freqs = h5f['freqs'].value
+        Ilm_init = h5f['Ilm'].value
+
+    Ilm_re_intp = interpolate.interp1d(freqs, Ilm_init.real, kind='cubic', axis=0)
+    Ilm_im_intp = interpolate.interp1d(freqs, Ilm_init.imag, kind='cubic', axis=0)
+
+    Ilm = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
+
+    return Ilm
 
 def rotate_sphr_coords(R, theta, phi):
     """
