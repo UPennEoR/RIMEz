@@ -67,7 +67,7 @@ def spin0_spherical_harmonics(ell, theta, phi, delta):
     Y_elm *= np.conj(sshtn.dl_m(ell, 0, theta, delta))
     return Y_elm
 
-def point_sources_harmonics(I, RA, dec, L):
+def point_sources_harmonics(I, RA, dec, L, ell_min=0):
     """
     Compute the spherical harmonic coefficents for a set of point sources.
 
@@ -91,6 +91,9 @@ def point_sources_harmonics(I, RA, dec, L):
     L : int
         The spatial bandlimit up to which harmonic coefficients will be computed.
 
+    ell_min : int
+        The starting order for the sequence of harmonic coefficients.
+
     Returns
     -------
     Ilm : complex 2d-array, shape (Nfreq, L**2)
@@ -102,19 +105,19 @@ def point_sources_harmonics(I, RA, dec, L):
 
     delta = pyssht.generate_dl(np.pi/2., L)
 
-    Ilm = inner_point_source_harmonics(I, RA, dec, L, delta)
+    Ilm = inner_point_source_harmonics(I, RA, dec, L, ell_min, delta)
     return Ilm
 
 @nb.njit
-def inner_point_source_harmonics(I, RA, dec, L, delta):
+def inner_point_source_harmonics(I, RA, dec, L, ell_min, delta):
 
     codec = np.pi/2 - dec
 
-    Ilm = np.zeros((I.shape[0], L**2), dtype=np.complex128)
+    Ilm = np.zeros((I.shape[0], L**2 - ell_min**2), dtype=np.complex128)
 
-    for ell in range(L):
+    for ell in range(ell_min, L):
         m = np.arange(-ell, ell+1)
-        indices = sshtn.elm2ind(ell, m)
+        indices = sshtn.elm2ind(ell, m) - ell_min**2 # shift indices incase ell_min is not zero
 
         for ii in range(RA.shape[0]):
             Ylm_conj_ii = np.conj(spin0_spherical_harmonics(ell, codec[ii], RA[ii], delta))
@@ -126,13 +129,13 @@ def inner_point_source_harmonics(I, RA, dec, L, delta):
 
     return Ilm
 
-def threaded_point_sources_harmonics(I, RA, dec, L, N_blocks=2):
+def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     """
     Same inputs/outputs as `point_sources_harmonics`.
 
     There has been no speed up beyond N_blocks=3, at which point the
     computation is ~2 times faster than running in a single thread. Something
-    to do with memory bandwidth and inefficient looping over `sshtn.dl_m`?
+    to do with memory and inefficient looping over `sshtn.dl_m`?
     """
     RA = np.array(RA)
     dec = np.array(dec)
@@ -143,19 +146,19 @@ def threaded_point_sources_harmonics(I, RA, dec, L, N_blocks=2):
     RA_split = list(np.array_split(RA, N_blocks))
     dec_split = list(np.array_split(dec, N_blocks))
 
-    Ilm_split = np.zeros((N_blocks, I.shape[0], L**2), dtype=np.complex128)
+    Ilm_split = np.zeros((N_blocks, I.shape[0], L**2 - ell_min**2), dtype=np.complex128)
 
     @nb.njit(nogil=True, parallel=True)
-    def alt_inner_blocks(I_s, RA_s, dec_s, L, delta, Ilm_s):
+    def alt_inner_blocks(I_s, RA_s, dec_s, L, ell_min, delta, Ilm_s):
         N_blocks = len(RA_s)
         for nn in nb.prange(N_blocks):
-            Ilm_s[nn] = inner_point_source_harmonics(I_s[nn], RA_s[nn], dec_s[nn], L, delta)
+            Ilm_s[nn] = inner_point_source_harmonics(I_s[nn], RA_s[nn], dec_s[nn], L, ell_min, delta)
 
         Ilm = np.sum(Ilm_s, axis=0)
 
         return Ilm
 
-    Ilm = alt_inner_blocks(I_split, RA_split, dec_split, L, delta, Ilm_split)
+    Ilm = alt_inner_blocks(I_split, RA_split, dec_split, L, ell_min, delta, Ilm_split)
 
     return Ilm
 
