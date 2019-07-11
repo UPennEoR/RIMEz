@@ -96,6 +96,26 @@ def get_minimal_antenna_set(r_axis, precision=3):
     return np.array(minimal_ant_pairs), u2a, a2u
 
 def generate_hex_positions(lattice_scale=14.7, u_lim=3, v_lim=3, w_lim=3):
+    """
+    Generates antenna position on a hexagonal lattice.
+
+    The lattice is centered at the origin coordinates so that there is always
+    an antenna with coordinates [0,0,0]. The coordinate values intended to
+    be in units of meters
+
+    Parameters
+    ----------
+    lattice_scale : float
+        The distance between any adjacent points in the lattice.
+
+    u_lim, v_lim, w_lim : int
+        The extent of the array in each hexagonal coordinate.
+
+    Returns
+    -------
+    r_axis : ndarray, shape (N_antennas, 3)
+        A list of coordinates for antennas in the array.
+    """
     u_ang = np.radians(-30. +30.)
     v_ang = np.radians(210.+30.)
     w_ang = np.radians(90.+30.)
@@ -283,7 +303,7 @@ def get_galactic_to_gcrs_rotation_matrix():
 ######## Things derived from beam functions
 
 def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
-    
+
     ttheta, pphi = pyssht.sample_positions(L_use, Method='MWSS', Grid=True)
 
     alt = np.pi/2. - ttheta.flatten()

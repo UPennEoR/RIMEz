@@ -202,3 +202,164 @@ class VisibilityCalculation(object):
         )
 
         uvd.write_uvh5(uvdata_file_path, clobber=clobber)
+
+class PointSourceSpectraSet(object):
+    """
+    Manages converting a discrete set of point sources to their
+    spherical harmonic representation
+
+    Parameters:
+    ----------
+    nu_mhz : ndarray
+        1D float array of frequencies (units of MHz) at which flux density data
+        is provided in the `I` array parameter.
+
+    I : ndarray
+        2D float array of flux density data (units of Jy) with shape
+        (Nfreq, Nsrc) where Nfreq is the length of `nu_mhz` and Nsrc is the
+        length of the `RA` and `Dec` parameters
+
+    RA : ndarray
+        1D float array of Right Ascension coordinates (in radians) with length
+        Nsrc, in the coordinate frame specified by the `coordinates` parameter.
+
+    Dec : ndarray
+        1D float array of Declination coordinates (in radians) with length Nsrc,
+        in the coordinate frame specified by the `coordinates` parameter.
+
+    coordinates : str
+        A string identifying the frame of the `RA` and `Dec` coordinate parameters.
+    """
+    def __init__(self, nu_mhz=None, I=None, RA=None, Dec=None, coordinates='GCRS', file_path=None):
+        if file_path is None:
+
+            if any([x is None for x in [nu_mhz, I, RA, Dec]]):
+                raise ValueError("One of the inputs (nu_mhz, I, RA, Dec) has not been provided.")
+
+            self.nu_mhz = nu_mhz
+            self.I = I
+            self.RA = RA
+            self.Dec = Dec
+
+            self.coordinates = coordinates
+
+            self.L = None
+            self.Ilm = None
+
+        else:
+            self.file_path = file_path
+            self.load_from_file()
+
+    def generate_harmonics(self, L, N_blocks=1):
+        """
+        Compute the harmonic coefficients for this set of point sources up to
+        the spatial bandlimit L. If harmonics have already been computed up to
+        a limit L0, then the harmonics in the range [L0, L) are computed
+        and appended.
+        """
+
+        if self.Ilm is None:
+            self.L = L
+            self.Ilm = sky_models.threaded_point_sources_harmonics(self.I,
+                                                                  self.RA,
+                                                                  self.Dec,
+                                                                  self.L,
+                                                                  N_blocks=N_blocks)
+        else:
+            L0 = self.L
+            self.L = L
+
+            Ilm_new = sky_models.threaded_point_sources_harmonics(self.I,
+                                                                 self.RA,
+                                                                 self.Dec,
+                                                                 self.L,
+                                                                 ell_min=L0,
+                                                                 N_blocks=N_blocks)
+
+            Ilm_init = np.zeros((self.Ilm.shape[0], self.L**2), dtype=np.complex128)
+            Ilm_init[:,:L0**2] = self.Ilm
+            Ilm_init[:,L0**2:] = Ilm_new
+
+            self.Ilm = np.copy(Ilm_init)
+
+            del Ilm_init, Ilm_new
+
+    def __add__(self, other):
+        if not isinstance(other, PointSourceSpectraSet):
+            raise ValueError(
+                "Adding anything other than a PointSourceSpectraSet"
+                "makes no sense and is not implemented")
+
+        if not np.allclose(self.nu_mhz, other.nu_mhz):
+            raise ValueError("These sets have different frequency axes.")
+
+        if self.coordinates != other.coordinates:
+            raise ValueError("The coordinate system of these sets are different"
+                            ", they must be the same to add.")
+        if self.L != other.L:
+            raise ValueError("The bandlimits of the two sets are different.")
+
+        I = np.concatenate((self.I, other.I), axis=1)
+        RA = np.concatenate((self.RA, other.RA))
+        Dec = np.concatenate((self.Dec, other.Dec))
+
+        new = PointSourceSpectraSet(self.nu_mhz, I, RA, Dec, coordinates=self.coordinates)
+
+        if self.Ilm is not None and other.Ilm is not None:
+            new.Ilm = self.Ilm + other.Ilm
+            new.L = self.L
+
+        return new
+
+    def __radd__(self, other):
+        if not isinstance(other, PointSourceSpectraSet):
+            raise ValueError(
+                "Adding anything other than a PointSourceSpectraSet"
+                "makes no sense and is not implemented")
+
+        return self.__add__(other)
+
+    def save_to_file(self, file_path=None, overwrite=False):
+        if file_path is None:
+            if getattr(self, 'file_path', None) is None:
+                raise ValueError("No file path set, must provide an input file_path")
+
+        else:
+            self.file_path = file_path
+
+        if os.path.exists(self.file_path):
+            if overwrite == False:
+                raise ValueError("File exists and overwrite not set.")
+
+            else:
+                print "Overwriting file:", file_path
+                os.remove(file_path)
+
+        else:
+            pass
+
+        with h5py.File(file_path, 'w') as h5f:
+            h5f.create_dataset('nu_mhz', data=self.nu_mhz)
+            h5f.create_dataset('I', data=self.I)
+            h5f.create_dataset('RA', data=self.RA)
+            h5f.create_dataset('Dec', data=self.Dec)
+            h5f.create_dataset('coordinates', data=np.string_(self.coordinates))
+
+            if not (self.Ilm is None):
+                h5f.create_dataset('Ilm', data=self.Ilm)
+                h5f.create_dataset('L', data=self.L)
+
+    def load_from_file(self):
+        if self.file_path is None:
+            raise ValueError("File path not set")
+
+        with h5py.File(self.file_path, 'r') as h5f:
+            self.nu_mhz = h5f['nu_mhz'].value
+            self.I = h5f['I'].value
+            self.RA = h5f['RA'].value
+            self.Dec = h5f['Dec'].value
+            self.coordinates = h5f['coordinates'].value
+
+            if 'Ilm' in h5f.keys():
+                self.Ilm = h5f['Ilm'].value
+                self.L = h5f['L'].value
