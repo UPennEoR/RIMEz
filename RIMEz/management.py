@@ -120,8 +120,8 @@ class VisibilityCalculation(object):
 
             if integration_time == 0:
 
-                print "Input integration time is identically zero, changing to 1e-9 seconds."
-                integration_time = 1e-9 # seconds
+                print "Input integration time is identically zero, changing to 1e-15 seconds."
+                integration_time = 1e-15 # seconds
 
             self.integration_time = integration_time
             self.parameters['integration_time'] = integration_time
@@ -136,13 +136,7 @@ class VisibilityCalculation(object):
 
         self.parameters['delta_era_axis'] = delta_era_axis
 
-        if self.integration_time <= 1e-9:
-
-            self.V = rime_funcs.parallel_visibility_dft_from_mmodes(delta_era_axis, self.Vm)
-
-        else:
-
-            raise ValueError("None-zero integration time not yet implmented.")
+        self.V = rime_funcs.parallel_visibility_dft_from_mmodes(delta_era_axis, self.Vm, self.integration_time)
 
     def write_visibility_fourier_modes(self, file_path, overwrite=False):
 

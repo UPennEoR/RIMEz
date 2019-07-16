@@ -414,27 +414,38 @@ def visiblity_dft_from_mmodes(era_axis, Vm):
 
     return V_dft
 
-def parallel_visibility_dft_from_mmodes(era_axis, Vm):
+def parallel_visibility_dft_from_mmodes(era_axis, Vm, delta_t):
     """
     Parallelized version of `visibility_dft_from_mmodes`. This code structure is
     because the parallelized njit function cannot initialize the output array `V_dft`,
     it must be passed in. Not sure why...
     """
+    if delta_t == 0.:
+        delta_t = 1e-20
+
+    omega_e = 7.292115e-5 # radian/second. Mean angular speed of earth, USNO Circular 179 page 16
+    delta_era = omega_e * delta_t
     V_dft = np.zeros((era_axis.size,) + Vm.shape[:2] + Vm.shape[3:], dtype=np.complex128)
-    inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft)
+    inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft, delta_era)
 
     return V_dft
 
 @nb.njit(parallel=True, nogil=True)
-def inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft):
+def inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft, delta_era):
 
     Lm = (Vm.shape[2]+1)/2
     m_axis = np.arange(-Lm+1,Lm)
+    
+    zero_ind = np.where(m_axis == 0)
+    x = m_axis * delta_era / 2.
+    x[zero_ind] = 1e-20
+
+    sinc = np.sin(x)/x
 
     for i in nb.prange(era_axis.size):
 
         phases = m_axis*era_axis[i]
-        f_kernel = np.cos(phases) - 1j*np.sin(phases)
+        f_kernel = sinc * (np.cos(phases) - 1j*np.sin(phases))
 
         for j in range(Vm.shape[0]):
             for k in range(Vm.shape[1]):
