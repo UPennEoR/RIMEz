@@ -306,10 +306,6 @@ class PointSourceSpectraSet(object):
         return new
 
     def __radd__(self, other):
-        if not isinstance(other, PointSourceSpectraSet):
-            raise ValueError(
-                "Adding anything other than a PointSourceSpectraSet"
-                "makes no sense and is not implemented")
 
         return self.__add__(other)
 
