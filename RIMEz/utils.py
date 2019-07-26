@@ -451,6 +451,7 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
                          ant_pairs,
                          V_sim,
                          integration_time='derived',
+                         channel_width='derived',
                          instrument='left blank by user',
                          telescope_name='left blank by user',
                          history='left blank by user',
@@ -489,7 +490,11 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
 
     uvd.x_orientation = 'east'
 
-    uvd.channel_width = nu_axis[1] - nu_axis[0]
+    if channel_width == 'derived':
+        uvd.channel_width = nu_axis[1] - nu_axis[0]
+    else:
+        uvd.channel_width = channel_width
+        
     uvd.Nfreqs = nu_axis.size
     uvd.Nspws = 1
     uvd.Npols = len(pols)
