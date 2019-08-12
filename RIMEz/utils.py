@@ -452,6 +452,8 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
                          V_sim,
                          integration_time='derived',
                          channel_width='derived',
+                         antenna_numbers='derived',
+                         antenna_names='derived',
                          instrument='left blank by user',
                          telescope_name='left blank by user',
                          history='left blank by user',
@@ -475,13 +477,27 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
     uvd.telescope_location = HERA_LOC.value
     uvd.telescope_location_lat_lon_alt = HERA_LAT_LON_ALT
 
-    uvd.antenna_numbers = np.arange(r_axis.shape[0], dtype=np.int64)
-    uvd.antenna_names = [str(ant_ind) for ant_ind in uvd.antenna_numbers]
+    if antenna_numbers == 'derived':
+        uvd.antenna_numbers = np.arange(r_axis.shape[0], dtype=np.int64)
+
+        ant_num_pairs = ant_pairs
+
+    else:
+        uvd.antenna_numbers = antenna_numbers
+
+        ant_num_pairs = np.array([
+            (antenna_numbers[ap[0]], antenna_numbers[ap[1]]) for ap in ant_pairs
+        ])
+
+    if antenna_names == 'derived':
+        uvd.antenna_names = [str(ant_ind) for ant_ind in uvd.antenna_numbers]
+    else:
+        uvd.antenna_names = antenna_names
 
     ant_pos_ECEF = pyuvdata.utils.ECEF_from_ENU(r_axis, HERA_LOC.lat.rad, HERA_LOC.lon.rad, HERA_LOC.height.value)
     uvd.antenna_positions = ant_pos_ECEF - uvd.telescope_location
 
-    bls = [uvd.antnums_to_baseline(ant_pair[0], ant_pair[1]) for ant_pair in ant_pairs]
+    bls = [uvd.antnums_to_baseline(ant_num_pair[0], ant_num_pair[1]) for ant_num_pair in ant_num_pairs]
 
     uvd.freq_array = nu_axis.reshape((1, nu_axis.size))
 
@@ -494,7 +510,7 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
         uvd.channel_width = nu_axis[1] - nu_axis[0]
     else:
         uvd.channel_width = channel_width
-        
+
     uvd.Nfreqs = nu_axis.size
     uvd.Nspws = 1
     uvd.Npols = len(pols)
@@ -506,8 +522,8 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
     _, time_arr = np.meshgrid(np.array(bls), jd_axis)
     uvd.time_array = time_arr.flatten()
 
-    ant1_arr, _ = np.meshgrid(ant_pairs[:,0], lst_axis)
-    ant2_arr, _ = np.meshgrid(ant_pairs[:,1], lst_axis)
+    ant1_arr, _ = np.meshgrid(ant_num_pairs[:,0], lst_axis)
+    ant2_arr, _ = np.meshgrid(ant_num_pairs[:,1], lst_axis)
     uvd.ant_1_array = ant1_arr.flatten()
     uvd.ant_2_array = ant2_arr.flatten()
 
@@ -545,8 +561,8 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
         for i_b in range(2):
             i_p = pol_map[(i_a, i_b)]
 
-            for k in range(ant_pairs.shape[0]):
-                a_i, a_j = ant_pairs[k]
+            for k in range(ant_num_pairs.shape[0]):
+                a_i, a_j = ant_num_pairs[k]
                 bl_num = uvd.antnums_to_baseline(a_i, a_j)
                 bl_ind = np.where(uvd.baseline_array == bl_num)[0]
 
@@ -562,3 +578,62 @@ def uvdata_from_sim_data(array_lat, array_lon, array_height,
     uvd.check()
 
     return uvd
+
+def inflate_uvdata_redundancies(uvd, red_gps):
+    """
+    red_gps is a list of lists of redundant groups of uvdata baseline numbers
+    """
+    #
+    # antenna_positions, antenna_numbers = uvd.get_ENU_antpos()
+    #
+    # red_gps, centers, lengths = pyuvdata.utils.get_antenna_redundancies(
+    #     antenna_numbers, antenna_positions, tol=tol, include_autos=include_autos)
+
+    # number of baselines in the inflated dataset
+    Nbls_full = reduce(lambda x,y: x+y, map(len, red_gps))
+
+    # number of baselines = (Nants*(Nants+1))/2, including autos
+    Nants = uvd.Nants_telescope
+    assert Nbls_full == (Nants*(Nants+1))/2
+
+    # the baseline numbers in the compressed dataset
+    bl_array_comp = uvd.baseline_array
+    # strip away repeats for different times
+    uniq_bl = np.unique(bl_array_comp)
+
+    group_index, bl_array_full = zip(*[(i, bl) for i, gp in enumerate(red_gps) for bl in gp])
+
+    group_blti = []
+    for gp in red_gps:
+        for bl in gp:
+            if bl in uniq_bl:
+                group_blti.append(np.where(bl == bl_array_comp)[0])
+                break
+    group_blti = np.array(group_blti) # shape (N_uniq_bl, Ntimes), transposed below
+
+    Nblts_full = uvd.Ntimes * sum(map(len, red_gps))
+
+    blt_map = np.transpose(group_blti)[..., group_index]
+    blt_map = blt_map.flatten()
+    assert Nblts_full == blt_map.size
+
+    full_baselines = np.tile(bl_array_full, uvd.Ntimes)
+    assert Nblts_full == full_baselines.size
+
+    uvd.data_array = uvd.data_array[blt_map, ...]
+    uvd.nsample_array = uvd.nsample_array[blt_map, ...]
+    uvd.flag_array = uvd.flag_array[blt_map, ...]
+    uvd.time_array = uvd.time_array[blt_map]
+    uvd.lst_array = uvd.lst_array[blt_map]
+    uvd.integration_time = uvd.integration_time[blt_map]
+    uvd.uvw_array = uvd.uvw_array[blt_map, ...]
+
+    uvd.baseline_array = full_baselines
+    uvd.ant_1_array, uvd.ant_2_array = uvd.baseline_to_antnums(uvd.baseline_array)
+    uvd.Nants_data = np.unique(uvd.ant_1_array.tolist() + uvd.ant_2_array.tolist()).size
+    uvd.Nbls = np.unique(uvd.baseline_array).size
+    uvd.Nblts = Nblts_full
+
+    uvd.check()
+
+    return

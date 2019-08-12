@@ -168,12 +168,13 @@ class VisibilityCalculation(object):
                 if (key in ['V','Vm']) is not True:
                     self.parameters[key] = h5f[key].value
 
-    def write_uvdata_time_series(self,
-            uvdata_file_path,
-            clobber=False,
+    def to_uvdata(self,
+            channel_width='derived',
+            antenna_numbers='derived',
+            antenna_names='derived',
             instrument='RIMEz calculation',
             telescope_name='probably HERA, but who knows?',
-            history='left blank by user',
+            history='',
             object_name=''):
 
         if getattr(self, 'V', None) is None:
@@ -188,6 +189,9 @@ class VisibilityCalculation(object):
                 self.antenna_positions_meters,
                 self.antenna_pairs_used,
                 self.V,
+                channel_width=channel_width,
+                antenna_numbers=antenna_numbers,
+                antenna_names=antenna_names,
                 integration_time=self.integration_time,
                 instrument=instrument,
                 telescope_name=telescope_name,
@@ -195,7 +199,52 @@ class VisibilityCalculation(object):
                 object_name=object_name,
         )
 
+        return uvd
+
+    def write_uvdata_time_series(self,
+            uvdata_file_path,
+            clobber=False,
+            instrument='RIMEz calculation',
+            telescope_name='probably HERA, but who knows?',
+            history='',
+            object_name=''):
+
+        uvd = self.to_uvdata(
+                    instrument=instrument,
+                    telescope_name=instrument,
+                    history=history,
+                    object_name=object_name)
+
         uvd.write_uvh5(uvdata_file_path, clobber=clobber)
+
+    # def write_uvdata_time_series(self,
+    #         uvdata_file_path,
+    #         clobber=False,
+    #         instrument='RIMEz calculation',
+    #         telescope_name='probably HERA, but who knows?',
+    #         history='',
+    #         object_name=''):
+    #
+    #     if getattr(self, 'V', None) is None:
+    #         raise ValueError("No visibility data available for writing.")
+    #
+    #     uvd = utils.uvdata_from_sim_data(
+    #             self.array_latitude,
+    #             self.array_longitude,
+    #             self.array_height,
+    #             self.time_sample_jds,
+    #             self.frequency_samples_hz,
+    #             self.antenna_positions_meters,
+    #             self.antenna_pairs_used,
+    #             self.V,
+    #             integration_time=self.integration_time,
+    #             instrument=instrument,
+    #             telescope_name=telescope_name,
+    #             history=history,
+    #             object_name=object_name,
+    #     )
+    #
+    #     uvd.write_uvh5(uvdata_file_path, clobber=clobber)
 
 class PointSourceSpectraSet(object):
     """
