@@ -204,12 +204,18 @@ class VisibilityCalculation(object):
     def write_uvdata_time_series(self,
             uvdata_file_path,
             clobber=False,
+            channel_width='derived',
+            antenna_numbers='derived',
+            antenna_names='derived',
             instrument='RIMEz calculation',
             telescope_name='probably HERA, but who knows?',
             history='',
             object_name=''):
 
         uvd = self.to_uvdata(
+                    channel_width=channel_width,
+                    antenna_numbers=antenna_numbers,
+                    antenna_names=antenna_names,
                     instrument=instrument,
                     telescope_name=instrument,
                     history=history,
