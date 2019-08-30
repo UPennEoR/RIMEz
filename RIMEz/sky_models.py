@@ -266,10 +266,47 @@ def diffuse_sky_model_egsm_preview(nu_axis):
         freqs = h5f['freqs'].value
         Ilm_init = h5f['Ilm'].value
 
-    Ilm_re_intp = interpolate.interp1d(freqs, Ilm_init.real, kind='cubic', axis=0)
-    Ilm_im_intp = interpolate.interp1d(freqs, Ilm_init.imag, kind='cubic', axis=0)
+    # 5th order spline interpolation
+    Ilm = np.zeros((nu_axis.size, Ilm_init.shape[1]), dtype=np.complex128)
+    for ii in range(Ilm.shape[1]):
 
-    Ilm = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
+        tck_re = interpolate.splrep(freqs, Ilm_init[:,ii].real, k=5, s=0, full_output=0)
+        tck_im = interpolate.splrep(freqs, Ilm_init[:,ii].imag, k=5, s=0, full_output=0)
+
+        Ilm[:,ii] = np.array(interpolate.splev(nu_axis, tck_re)) \
+                    + 1j*np.array(interpolate.splev(nu_axis, tck_im))
+
+    # rbf interpolation (sinc or gaussian) - too slow with this many spatial modes!
+    # delta_nu_in = np.diff(freqs)[0]
+    #
+    # def sinc_kernel(self, r):
+    #     tau_c = 1./(2*self.epsilon)
+    #
+    #     r = np.where(r == 0, 1e-20, r)
+    #     y = 2*np.pi*tau_c*r
+    #     kernel = np.sin(y)/y
+    #     return kernel
+    #
+    # def rbf_obj(data):
+    #     rbf = interpolate.Rbf(freqs, data,
+    #                         function='gaussian',
+    #                         epsilon=delta_nu_in,
+    #                         smooth=0.)
+    #     return rbf
+    #
+    # Ilm = np.zeros((nu_axis.size, Ilm_init.shape[1]), dtype=np.complex128)
+    # for ii in range(Ilm.shape[1]):
+    #
+    #     Ilm_re_intp = rbf_obj(Ilm_init[:,ii].real)
+    #     Ilm_im_intp = rbf_obj(Ilm_init[:,ii].imag)
+    #
+    #     Ilm[:,ii] = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
+
+    # 3rd order spline
+    # Ilm_re_intp = interpolate.interp1d(freqs, Ilm_init.real, kind='cubic', axis=0)
+    # Ilm_im_intp = interpolate.interp1d(freqs, Ilm_init.imag, kind='cubic', axis=0)
+    #
+    # Ilm = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
 
     return Ilm
 
