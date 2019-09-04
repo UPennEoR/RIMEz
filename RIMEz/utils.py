@@ -1,12 +1,11 @@
-import numpy as np
-import numba as nb
+from functools import reduce
 
+import numpy as np
 from scipy import optimize, linalg
 from astropy import coordinates as coord
 from astropy import units
-from astropy.time import Time, TimeDelta
 from astropy import _erfa
-from astropy.coordinates.builtin_frames.utils import get_jd12
+from astropy.time import Time
 
 import healpy as hp
 import pyssht
@@ -14,11 +13,11 @@ from spin1_beam_model.cst_processing import ssht_power_spectrum
 
 import pyuvdata
 from pyuvdata import UVData
-from pyuvdata.utils import get_lst_for_time, polstr2num
+from pyuvdata.utils import polstr2num
 
 from beam_models import az_shiftflip
 
-##### misc.
+# #### misc.
 
 HERA_LAT = np.radians(-30.72152777777791)
 HERA_LON = np.radians(21.428305555555557)
@@ -43,7 +42,7 @@ def kernel_cutoff_estimate(max_baseline_length_meters, max_freq_hz, width_estima
     return ell_cutoff
 
 
-######### antenna array stuff
+# ######## antenna array stuff
 
 # This method of finding reducencies is aimed at the HERA hexagonal lattices
 # since it first finds clusters in baseline length, then for each length
@@ -151,7 +150,7 @@ def generate_hex_positions(lattice_scale=14.7, u_lim=3, v_lim=3, w_lim=3):
     return r_axis
 
 
-######## coordinates and visibility function parameters
+# ####### coordinates and visibility function parameters
 
 
 def JD2era(JD):
@@ -329,9 +328,9 @@ def get_galactic_to_gcrs_rotation_matrix():
     return R_g2gcrs
 
 
-########
+# #######
 
-######## Things derived from beam functions
+# ####### Things derived from beam functions
 
 
 def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
@@ -469,7 +468,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     return Cl_K00
 
 
-###### UVData construction from sim parameters
+# ##### UVData construction from sim parameters
 
 # needed sim data:
 # HERA_LOC v

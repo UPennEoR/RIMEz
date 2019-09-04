@@ -21,7 +21,7 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
 
     """
 
-    if np.any(nu_axis < 1e6) == True:
+    if np.any(nu_axis < 1e6):
         msg = (
             "Warning: input frequencies look like they might not be in units of Hz."
         )
@@ -45,7 +45,7 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
         nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs
     )
 
-    if indexed == True:
+    if indexed:
 
         @nb.njit
         def spline_beam_funcs(i, nu, alt, az):
@@ -188,7 +188,7 @@ def airy_dipole(nu, alt, az, a):
 @nb.njit
 def gaussian_dipole(alt, az, a):
 
-    calt, salt = np.cos(alt), np.sin(alt)
+    salt = np.sin(alt)
     caz, saz = np.cos(az), np.sin(az)
 
     J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
@@ -227,7 +227,7 @@ def heraish_beam_func(i, nu, alt, az):
     return result
 
 
-##### basis transformation and misc.
+# #### basis transformation and misc.
 
 
 @nb.njit
@@ -310,9 +310,9 @@ def rotation_matrix(axis, angle):
         [[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]], [-axis[1], axis[0], 0.0]]
     )
 
-    I = np.identity(3)
+    Imat = np.identity(3)
 
-    R = I + np.sin(angle) * K + (1.0 - np.cos(angle)) * np.dot(K, K)
+    R = Imat + np.sin(angle) * K + (1.0 - np.cos(angle)) * np.dot(K, K)
 
     return R
 
@@ -340,7 +340,6 @@ def basis_transform_components(alt, az, R):
     azh = np.dot(R_flip.T, az_hat(alt, az))
 
     th = np.dot(R.T, theta_hat(theta, phi))
-    ph = np.dot(R.T, phi_hat(theta, phi))
 
     cosX = np.sum(th * alth, axis=0)
     sinX = np.sum(th * azh, axis=0)

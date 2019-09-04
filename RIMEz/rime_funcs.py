@@ -1,7 +1,6 @@
 import numpy as np
 import numba as nb
 
-import pyssht
 import ssht_numba as sshtn
 
 
@@ -56,7 +55,7 @@ def RIME_sum(J1, J2_conj, F1, F2_conj, S, sigma, bsigma):
                 for c in range(2):
                     for d in range(2):
                         for g in range(Nstokes):
-                            if bsigma[b, c, g] == True:
+                            if bsigma[b, c, g]:
                                 # note that the transpose of J2 is taken
                                 V[a, d] += (
                                     F1[n]
@@ -253,8 +252,7 @@ def vec_muv_constructor(beam_funcs, compile_target="parallel"):
                         for i_b in range(2):
                             for i_c in range(2):
                                 for i_d in range(2):
-                                    if bsigma[i_b, i_c, 0] == True:
-                                        h = i_a + 2 * i_d
+                                    if bsigma[i_b, i_c, 0]:
                                         i_rav = (
                                             i_ph + ra.shape[1] * i_th
                                         )  # equiv to np.ravel_multi_index((i_th, i_ph), (Lb, 2*Lb-1), order='C')
@@ -396,8 +394,7 @@ def mmode_unpol_visibilities(
                         for i_b in range(2):
                             for i_c in range(2):
                                 for i_d in range(2):
-                                    if bsigma[i_b, i_c, 0] == True:
-                                        h = i_a + 2 * i_d
+                                    if bsigma[i_b, i_c, 0]:
                                         i_rav = (
                                             i_ph + ra.shape[1] * i_th
                                         )  # equiv to np.ravel_multi_index((i_th, i_ph), (Lb, 2*Lb-1), order='C')
@@ -548,9 +545,7 @@ def inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft, delta_era):
 
 def vectorize_vis_mat(vmat_in):
     V_vec = np.zeros((vmat_in.shape[0] + 1, 8), dtype=np.float64)
-
     f = [np.real, np.imag]
-    u = [1, 1j]
 
     for i in range(2):
         for j in range(2):
@@ -564,7 +559,6 @@ def vectorize_vis_mat(vmat_in):
 
 def devectorize_vis_vec(vvec_in):
     Vmat = np.zeros((vvec_in.shape[0], 2, 2), dtype=np.complex128)
-    f = [np.real, np.imag]
     u = [1, 1j]
 
     for i in range(2):
@@ -623,6 +617,7 @@ def visibility_from_mmodes(Vm, era_axis, up_sampling=10):
 
             V_temp = vectorize_vis_mat(V_fftup[j, k, :, :, :].squeeze())
 
+            # TODO: figure out where these functions live
             tck, _ = interpolate.splprep(
                 V_temp.T, u=per_era_in, k=3, s=0.0, full_output=0, per=1
             )

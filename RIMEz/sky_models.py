@@ -2,7 +2,6 @@ import numpy as np
 import numba as nb
 from scipy import interpolate
 
-from itertools import izip
 import h5py
 
 import pyssht
@@ -12,7 +11,7 @@ import healpy as hp
 
 import utils
 
-##### simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
+# #### simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
 
 
 def random_power_law(S_min, S_max, alpha, size=1):
@@ -201,9 +200,9 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
 #
 #     return Ilm
 
-######### GLEAM
+# ######## GLEAM
 
-######### diffuse sky model generation
+# ######## diffuse sky model generation
 
 
 def hp2ssht_index(hp_flm_in, lmax=None):
@@ -217,7 +216,7 @@ def hp2ssht_index(hp_flm_in, lmax=None):
 
     R_xflip = np.array([[-1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
 
-    if lmax == None:
+    if lmax is None:
         lmax = hp.Alm.getlmax(hp_flm_in[0, :].size)
 
     hp_flm = np.copy(hp_flm_in)
@@ -276,7 +275,7 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
     #     Ilm_init = hp.smoothalm(Ilm_init, fwhm=fwhm, pol=False, verbose=False, inplace=True)
     #
 
-    if ssht_index == True:
+    if ssht_index:
         flm = hp2ssht_index(Ilm_init, lmax=lmax)
 
     else:
@@ -371,7 +370,7 @@ def linear_interp_rotation(hmap, R):
     return hp.get_interp_val(hmap, t, p)
 
 
-#### old thing
+# ### old thing
 def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     if R_g2c is None:
         R_g2c = hp.rotator.Rotator(coord=["G", "C"]).mat
@@ -382,7 +381,6 @@ def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     I_init = Jy_per_MJy * gsm_low.generate(nu_axis)
 
     nside = 64
-    npix = 12 * nside ** 2
     lmax = 3 * nside - 1
 
     Ilm_init = hp.map2alm(I_init, lmax=lmax, pol=False, use_pixel_weights=True)
@@ -395,9 +393,7 @@ def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     for i in range(Ilm_init.shape[0]):
         hp.rotate_alm(Ilm_init[i, :], matrix=R_g2c, lmax=lmax)
 
-    if ssht_index == True:
-        L = lmax + 1
-
+    if ssht_index:
         flm = hp2ssht_index(Ilm_init, lmax=lmax)
     else:
         flm = Ilm_init

@@ -7,12 +7,12 @@ import numpy as np
 
 import ssht_numba as sshtn
 
-import utils
-import rime_funcs
-import beam_models
-import sky_models
+from . import utils
+from . import rime_funcs
+from . import sky_models
 
-from RIMEz import __path__ as RIMEz_path
+# where does this come from?
+from . import __path__ as RIMEz_path
 from ssht_numba import __path__ as ssht_numba_path
 from spin1_beam_model import __path__ as spin1_beam_model_path
 
@@ -156,7 +156,7 @@ class VisibilityCalculation(object):
                 h5f.create_dataset(label, data=commit_hash_str)
 
     def write_visibility_time_series(self, file_path):
-        raise NotImplmentedError
+        raise NotImplementedError
 
     def load_visibility_calculation(self, file_path):
 
@@ -268,7 +268,7 @@ class PointSourceSpectraSet(object):
         1D float array of frequencies (units of MHz) at which flux density data
         is provided in the `I` array parameter.
 
-    I : ndarray
+    Iflux : ndarray
         2D float array of flux density data (units of Jy) with shape
         (Nfreq, Nsrc) where Nfreq is the length of `nu_mhz` and Nsrc is the
         length of the `RA` and `Dec` parameters
@@ -286,17 +286,17 @@ class PointSourceSpectraSet(object):
     """
 
     def __init__(
-        self, nu_mhz=None, I=None, RA=None, Dec=None, coordinates="GCRS", file_path=None
+        self, nu_mhz=None, Iflux=None, RA=None, Dec=None, coordinates="GCRS", file_path=None
     ):
         if file_path is None:
 
-            if any([x is None for x in [nu_mhz, I, RA, Dec]]):
+            if any([x is None for x in [nu_mhz, Iflux, RA, Dec]]):
                 raise ValueError(
-                    "One of the inputs (nu_mhz, I, RA, Dec) has not been provided."
+                    "One of the inputs (nu_mhz, Iflux, RA, Dec) has not been provided."
                 )
 
             self.nu_mhz = nu_mhz
-            self.I = I
+            self.Iflux = Iflux
             self.RA = RA
             self.Dec = Dec
 
@@ -320,14 +320,14 @@ class PointSourceSpectraSet(object):
         if self.Ilm is None:
             self.L = L
             self.Ilm = sky_models.threaded_point_sources_harmonics(
-                self.I, self.RA, self.Dec, self.L, N_blocks=N_blocks
+                self.Iflux, self.RA, self.Dec, self.L, N_blocks=N_blocks
             )
         else:
             L0 = self.L
             self.L = L
 
             Ilm_new = sky_models.threaded_point_sources_harmonics(
-                self.I, self.RA, self.Dec, self.L, ell_min=L0, N_blocks=N_blocks
+                self.Iflux, self.RA, self.Dec, self.L, ell_min=L0, N_blocks=N_blocks
             )
 
             Ilm_init = np.zeros((self.Ilm.shape[0], self.L ** 2), dtype=np.complex128)
@@ -356,12 +356,12 @@ class PointSourceSpectraSet(object):
         if self.L != other.L:
             raise ValueError("The bandlimits of the two sets are different.")
 
-        I = np.concatenate((self.I, other.I), axis=1)
+        Iflux = np.concatenate((self.Iflux, other.Iflux), axis=1)
         RA = np.concatenate((self.RA, other.RA))
         Dec = np.concatenate((self.Dec, other.Dec))
 
         new = PointSourceSpectraSet(
-            self.nu_mhz, I, RA, Dec, coordinates=self.coordinates
+            self.nu_mhz, Iflux, RA, Dec, coordinates=self.coordinates
         )
 
         if self.Ilm is not None and other.Ilm is not None:
@@ -383,7 +383,7 @@ class PointSourceSpectraSet(object):
             self.file_path = file_path
 
         if os.path.exists(self.file_path):
-            if overwrite == False:
+            if not overwrite:
                 raise ValueError("File exists and overwrite not set.")
 
             else:
@@ -395,7 +395,7 @@ class PointSourceSpectraSet(object):
 
         with h5py.File(file_path, "w") as h5f:
             h5f.create_dataset("nu_mhz", data=self.nu_mhz)
-            h5f.create_dataset("I", data=self.I)
+            h5f.create_dataset("Iflux", data=self.Iflux)
             h5f.create_dataset("RA", data=self.RA)
             h5f.create_dataset("Dec", data=self.Dec)
             h5f.create_dataset("coordinates", data=np.string_(self.coordinates))
@@ -410,7 +410,7 @@ class PointSourceSpectraSet(object):
 
         with h5py.File(self.file_path, "r") as h5f:
             self.nu_mhz = h5f["nu_mhz"].value
-            self.I = h5f["I"].value
+            self.Iflux = h5f["Iflux"].value
             self.RA = h5f["RA"].value
             self.Dec = h5f["Dec"].value
             self.coordinates = h5f["coordinates"].value
