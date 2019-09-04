@@ -6,6 +6,7 @@ from spin1_beam_model.jones_matrix_field import AntennaFarFieldResponse
 
 from dfitpack_numba import bispeu_nb
 
+
 def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed=False):
     """
     Parameters:
@@ -21,14 +22,15 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
     """
 
     if np.any(nu_axis < 1e6) == True:
-        msg = "Warning: input frequencies look like they might not be in units"\
-            " of Hz."
+        msg = (
+            "Warning: input frequencies look like they might not be in units of Hz."
+        )
         print(msg)
 
     AR = AntennaFarFieldResponse(full_file_name)
-    AR.derive_symmetric_rotated_feed(rotation_angle_sign='positive')
+    AR.derive_symmetric_rotated_feed(rotation_angle_sign="positive")
 
-    nu_axis_MHz = 1e-6*nu_axis
+    nu_axis_MHz = 1e-6 * nu_axis
     AR.compute_spatial_spline_approximations(nu_axis_MHz, L_synth=L_synth)
 
     E_coeffs = AR.E_spl_coeffs
@@ -39,7 +41,9 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
     kx = AR.kx
     ky = AR.ky
 
-    spline_beam_func = construct_spline_beam_func(nu_axis, tx,ty,kx,ky,E_coeffs, rE_coeffs)
+    spline_beam_func = construct_spline_beam_func(
+        nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs
+    )
 
     if indexed == True:
 
@@ -56,7 +60,9 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
         return spline_beam_func
 
 
-def construct_spline_beam_func(nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs, imap='default'):
+def construct_spline_beam_func(
+    nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs, imap="default"
+):
     """
     Constructor of an njit-ed function to evaluate a Jones matrix.
 
@@ -89,31 +95,37 @@ def construct_spline_beam_func(nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs, ima
         basis aligned with intermediate RA/Dec
 
     """
-    if imap == 'default':
-        imap = np.array([0,1])
-    elif imap == 'alt':
-        imap = np.array([1,0])
+    if imap == "default":
+        imap = np.array([0, 1])
+    elif imap == "alt":
+        imap = np.array([1, 0])
 
-    HERA_COLAT = 90. + 30.72152777777791
-    R = rotation_matrix(np.array([0,1.,0]), np.radians(HERA_COLAT))
+    HERA_COLAT = 90.0 + 30.72152777777791
+    R = rotation_matrix(np.array([0, 1.0, 0]), np.radians(HERA_COLAT))
 
     @nb.njit
     def spline_beam_func(nu, alt, az):
         i_nu = np.where(nu == nu_axis)[0][0]
 
-        theta = np.pi/2. - alt
+        theta = np.pi / 2.0 - alt
         mu = np.cos(theta)
         phi = az_shiftflip(az)
 
-        J_aa = np.zeros(theta.shape + (2,2), dtype=nb.complex128)
-        u = [-1., -1j] # negative for components in alt/az basis
-#         u = [1., 1j]
+        J_aa = np.zeros(theta.shape + (2, 2), dtype=nb.complex128)
+        u = [-1.0, -1j]  # negative for components in alt/az basis
+        #         u = [1., 1j]
 
         for kk in range(2):
             for aa in range(2):
 
-                J_aa[...,imap[0], aa] += u[kk]*bispeu_nb(tx, ty, E_coeffs[i_nu, aa, kk, :], kx, ky, mu, phi)[0]
-                J_aa[...,imap[1], aa] += u[kk]*bispeu_nb(tx, ty, rE_coeffs[i_nu, aa, kk, :], kx, ky, mu, phi)[0]
+                J_aa[..., imap[0], aa] += (
+                    u[kk]
+                    * bispeu_nb(tx, ty, E_coeffs[i_nu, aa, kk, :], kx, ky, mu, phi)[0]
+                )
+                J_aa[..., imap[1], aa] += (
+                    u[kk]
+                    * bispeu_nb(tx, ty, rE_coeffs[i_nu, aa, kk, :], kx, ky, mu, phi)[0]
+                )
 
         # bleh, need to go back and check why the components have these signs
         # It can be discovered by computing all 4 possible dot products between
@@ -121,12 +133,12 @@ def construct_spline_beam_func(nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs, ima
         # RA/dec being right-handed, Alt/Az being left-handed.
         cosX, sinX = basis_transform_components(alt, az, R)
         Umat = np.zeros((cosX.size, 2, 2), dtype=np.float64)
-        Umat[:,0,0], Umat[:,0,1] = cosX, sinX
-        Umat[:,1,0], Umat[:,1,1] = sinX, -cosX
+        Umat[:, 0, 0], Umat[:, 0, 1] = cosX, sinX
+        Umat[:, 1, 0], Umat[:, 1, 1] = sinX, -cosX
 
         J_eq = apply_basis_transform(J_aa, Umat)
 
-        tukeyW = tukey_window(alt, np.radians(2.))
+        tukeyW = tukey_window(alt, np.radians(2.0))
         for n in range(J_eq.shape[0]):
             J_eq[n] *= tukeyW[n]
 
@@ -134,41 +146,44 @@ def construct_spline_beam_func(nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs, ima
 
     return spline_beam_func
 
+
 # a NJIT-able Bessel function of the first kind
-J1_addr = nb.extending.get_cython_function_address("scipy.special.cython_special","j1")
+J1_addr = nb.extending.get_cython_function_address("scipy.special.cython_special", "j1")
 J1_functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double)
 J1_fn = J1_functype(J1_addr)
 
-@nb.vectorize('float64(float64)')
+
+@nb.vectorize("float64(float64)")
 def njit_J1(x):
     return J1_fn(x)
 
+
 @nb.njit
 def airy_dipole(nu, alt, az, a):
-    c = 299792458.
-    k = 2*np.pi* nu / c
+    c = 299792458.0
+    k = 2 * np.pi * nu / c
     ka = k * a
     calt, salt = np.cos(alt), np.sin(alt)
     caz, saz = np.cos(az), np.sin(az)
 
-    J = np.zeros(alt.shape +(2,2), dtype=nb.complex128)
+    J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
 
     # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
     # of the first kind
 
     arg = ka * calt
-    zero_inds = np.where(arg == 0.)[0]
+    zero_inds = np.where(arg == 0.0)[0]
     arg[zero_inds] = 1e-20
-    G = 2. * njit_J1(arg)/arg
-#     G = np.ones_like(arg)
+    G = 2.0 * njit_J1(arg) / arg
+    #     G = np.ones_like(arg)
 
     # '00' <-> 'East,Alt', '01' <-> 'East,Az',
     # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-    J[...,0,0], J[...,0,1] = -saz*salt * G, caz * G
-    J[...,1,0], J[...,1,1] = -caz*salt * G, -saz * G
-
+    J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+    J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
     return J
+
 
 @nb.njit
 def gaussian_dipole(alt, az, a):
@@ -176,66 +191,70 @@ def gaussian_dipole(alt, az, a):
     calt, salt = np.cos(alt), np.sin(alt)
     caz, saz = np.cos(az), np.sin(az)
 
-    J = np.zeros(alt.shape +(2,2), dtype=nb.complex128)
+    J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
 
     # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
     # of the first kind
 
-    G = np.exp(-(np.pi/2. - alt)**2. / 2. / a**2.)
-
+    G = np.exp(-(np.pi / 2.0 - alt) ** 2.0 / 2.0 / a ** 2.0)
 
     # '00' <-> 'East,Alt', '01' <-> 'East,Az',
     # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-    J[...,0,0], J[...,0,1] = -saz*salt * G, caz * G
-    J[...,1,0], J[...,1,1] = -caz*salt * G, -saz * G
-
+    J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+    J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
     return J
 
+
 @nb.njit
 def heraish_beam_func(i, nu, alt, az):
-    a = 7.
+    a = 7.0
     J_aa = airy_dipole(nu, alt, az, a)
 
-    HERA_COLAT = 90. + 30.72152777777791
-    R = rotation_matrix(np.array([0,1.,0]), np.radians(HERA_COLAT))
+    HERA_COLAT = 90.0 + 30.72152777777791
+    R = rotation_matrix(np.array([0, 1.0, 0]), np.radians(HERA_COLAT))
 
     cosX, sinX = basis_transform_components(alt, az, R)
     Umat = np.zeros((cosX.size, 2, 2), dtype=np.float64)
-    Umat[:,0,0], Umat[:,0,1] = cosX, sinX
-    Umat[:,1,0], Umat[:,1,1] = sinX, -cosX
+    Umat[:, 0, 0], Umat[:, 0, 1] = cosX, sinX
+    Umat[:, 1, 0], Umat[:, 1, 1] = sinX, -cosX
 
     # J_eq = np.einsum('...ab,...cb->...ac', J_aa, Umat)
     result = apply_basis_transform(J_aa, Umat)
-    tukeyW = tukey_window(alt, np.radians(2.))
+    tukeyW = tukey_window(alt, np.radians(2.0))
     for n in range(result.shape[0]):
         result[n] *= tukeyW[n]
     return result
 
+
 ##### basis transformation and misc.
+
 
 @nb.njit
 def altaz2cartENU(alt, az):
-    E = np.sin(az)*np.cos(alt)
-    N = np.cos(az)*np.cos(alt)
+    E = np.sin(az) * np.cos(alt)
+    N = np.cos(az) * np.cos(alt)
     U = np.sin(alt)
-    return np.stack((E,N,U),axis=0)
+    return np.stack((E, N, U), axis=0)
+
 
 @nb.njit
-def cartENU2altaz(E,N,U):
-    alt = np.arctan(U/np.sqrt(E**2. + N**2.))
+def cartENU2altaz(E, N, U):
+    alt = np.arctan(U / np.sqrt(E ** 2.0 + N ** 2.0))
     az = np.arctan2(E, N)
-    inds = np.where(az < 0.)[0]
+    inds = np.where(az < 0.0)[0]
 
-    az[inds] = az[inds] + 2.*np.pi
+    az[inds] = az[inds] + 2.0 * np.pi
     return alt, az
+
 
 @nb.njit
 def alt_hat(alt, az):
-    alth_E = -np.sin(az)*np.sin(alt)
-    alth_N = -np.cos(az)*np.sin(alt)
+    alth_E = -np.sin(az) * np.sin(alt)
+    alth_N = -np.cos(az) * np.sin(alt)
     alth_U = np.cos(alt)
     return np.stack((alth_E, alth_N, alth_U), axis=0)
+
 
 @nb.njit
 def az_hat(alt, az):
@@ -244,30 +263,34 @@ def az_hat(alt, az):
     azh_U = np.zeros_like(alt)
     return np.stack((azh_E, azh_N, azh_U), axis=0)
 
+
 @nb.njit
 def thetaphi2cartXYZ(theta, phi):
-    X = np.cos(phi)*np.cos(theta)
-    Y = np.sin(phi)*np.cos(theta)
+    X = np.cos(phi) * np.cos(theta)
+    Y = np.sin(phi) * np.cos(theta)
     Z = np.sin(theta)
-    return np.stack((X,Y,Z), axis=0)
+    return np.stack((X, Y, Z), axis=0)
+
 
 @nb.njit
-def cartXYZ2thetaphi(X,Y,Z):
-    theta = np.arctan(Z/np.sqrt(X**2. + Y**2.))
+def cartXYZ2thetaphi(X, Y, Z):
+    theta = np.arctan(Z / np.sqrt(X ** 2.0 + Y ** 2.0))
     phi = np.arctan2(Y, X)
-    inds = np.where(phi < 0.)[0]
+    inds = np.where(phi < 0.0)[0]
 
-    phi[inds] = phi[inds] + 2*np.pi
+    phi[inds] = phi[inds] + 2 * np.pi
 
     return theta, phi
 
+
 @nb.njit
 def theta_hat(theta, phi):
-    thetah_x = -np.cos(phi)*np.sin(theta)
-    thetah_y = -np.sin(phi)*np.sin(theta)
+    thetah_x = -np.cos(phi) * np.sin(theta)
+    thetah_y = -np.sin(phi) * np.sin(theta)
     thetah_z = np.cos(theta)
 
     return np.stack((thetah_x, thetah_y, thetah_z), axis=0)
+
 
 @nb.njit
 def phi_hat(theta, phi):
@@ -277,22 +300,22 @@ def phi_hat(theta, phi):
 
     return np.stack((phih_x, phih_y, phih_z), axis=0)
 
+
 @nb.njit
 def rotation_matrix(axis, angle):
     """
     Rodrigues' rotation matrix formula
     """
-    K = np.array([
-        [0.,-axis[2], axis[1]],
-        [axis[2],0.,-axis[0]],
-        [-axis[1],axis[0],0.]
-    ])
+    K = np.array(
+        [[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]], [-axis[1], axis[0], 0.0]]
+    )
 
     I = np.identity(3)
 
-    R = I + np.sin(angle) * K + (1. - np.cos(angle)) * np.dot(K,K)
+    R = I + np.sin(angle) * K + (1.0 - np.cos(angle)) * np.dot(K, K)
 
     return R
+
 
 @nb.njit
 def basis_transform_components(alt, az, R):
@@ -303,19 +326,15 @@ def basis_transform_components(alt, az, R):
     """
     ENU_hat = altaz2cartENU(alt, az)
 
-    temp = ENU_hat[0,:].copy()
-    ENU_hat[0,:] = -ENU_hat[1,:]
-    ENU_hat[1,:] = temp
+    temp = ENU_hat[0, :].copy()
+    ENU_hat[0, :] = -ENU_hat[1, :]
+    ENU_hat[1, :] = temp
 
     XYZ_hat = np.dot(R, ENU_hat)
 
     theta, phi = cartXYZ2thetaphi(XYZ_hat[0], XYZ_hat[1], XYZ_hat[2])
 
-    R_flip = np.array([
-        [0,1.,0],
-        [-1.,0,0],
-        [0,0,1.]
-    ])
+    R_flip = np.array([[0, 1.0, 0], [-1.0, 0, 0], [0, 0, 1.0]])
 
     alth = np.dot(R_flip.T, alt_hat(alt, az))
     azh = np.dot(R_flip.T, az_hat(alt, az))
@@ -323,10 +342,11 @@ def basis_transform_components(alt, az, R):
     th = np.dot(R.T, theta_hat(theta, phi))
     ph = np.dot(R.T, phi_hat(theta, phi))
 
-    cosX = np.sum(th*alth, axis=0)
-    sinX = np.sum(th*azh, axis=0)
+    cosX = np.sum(th * alth, axis=0)
+    sinX = np.sum(th * azh, axis=0)
 
     return cosX, sinX
+
 
 @nb.njit
 def apply_basis_transform(Ma, Mb):
@@ -347,6 +367,7 @@ def apply_basis_transform(Ma, Mb):
                     res[n, i_a, i_c] += Ma[n, i_a, i_b] * Mb[n, i_c, i_b]
     return res
 
+
 @nb.njit
 def az_shiftflip(az_in):
     """
@@ -356,9 +377,10 @@ def az_shiftflip(az_in):
 
     This function is it's own inverse.
     """
-    az_out = np.pi/2. - az_in
-    az_out[az_out < 0.] += 2*np.pi
+    az_out = np.pi / 2.0 - az_in
+    az_out[az_out < 0.0] += 2 * np.pi
     return az_out
+
 
 @nb.njit
 def tukey_window(alt, start_rad):
@@ -369,16 +391,17 @@ def tukey_window(alt, start_rad):
     the function is identically equal to 1 when alt > start_rad.
     """
     flat_inds = np.where(alt >= start_rad)[0]
-    flat_indsC = np.where(alt < start_rad)[0] # complment indices of flat_inds
+    flat_indsC = np.where(alt < start_rad)[0]  # complment indices of flat_inds
 
     tw = np.zeros_like(alt)
-    tw[flat_inds] = 1.
+    tw[flat_inds] = 1.0
 
-    a = np.pi /2. /start_rad
+    a = np.pi / 2.0 / start_rad
 
     for ind in flat_indsC:
-        if alt[ind] >= 0.:
-            tw[ind] = np.sin(a*alt[ind])**2.
+        if alt[ind] >= 0.0:
+            tw[ind] = np.sin(a * alt[ind]) ** 2.0
     return tw
+
 
 #######
