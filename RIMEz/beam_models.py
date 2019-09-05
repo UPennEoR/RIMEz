@@ -227,7 +227,7 @@ def heraish_beam_func(i, nu, alt, az):
     return result
 
 
-# #### basis transformation and misc.
+# basis transformation and misc.
 
 
 @nb.njit
@@ -401,6 +401,3 @@ def tukey_window(alt, start_rad):
         if alt[ind] >= 0.0:
             tw[ind] = np.sin(a * alt[ind]) ** 2.0
     return tw
-
-
-#######

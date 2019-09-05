@@ -11,7 +11,7 @@ import healpy as hp
 
 import utils
 
-# #### simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
+# simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
 
 
 def random_power_law(S_min, S_max, alpha, size=1):
@@ -200,9 +200,9 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
 #
 #     return Ilm
 
-# ######## GLEAM
+# GLEAM
 
-# ######## diffuse sky model generation
+# diffuse sky model generation
 
 
 def hp2ssht_index(hp_flm_in, lmax=None):
@@ -370,7 +370,7 @@ def linear_interp_rotation(hmap, R):
     return hp.get_interp_val(hmap, t, p)
 
 
-# ### old thing
+# old thing
 def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     if R_g2c is None:
         R_g2c = hp.rotator.Rotator(coord=["G", "C"]).mat
