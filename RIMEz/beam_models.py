@@ -19,9 +19,6 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
     instrumental HERA Jones such that the elements are:
 
     """
-    if AntennaFarFieldResponse is None:
-        raise ImportError("You need spin1_beam_model to run this function!")
-
     if np.any(nu_axis < 1e6) == True:
         msg = "Warning: input frequencies look like they might not be in units"\
             " of Hz."
