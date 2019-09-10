@@ -2,12 +2,16 @@ import numpy as np
 import numba as nb
 from scipy import interpolate
 
-from itertools import izip
 import h5py
 
 import pyssht
 import ssht_numba as sshtn
-import pygsm
+
+try:
+    import pygsm
+except ImportError:
+    pygsm = None
+
 import healpy as hp
 
 import utils
@@ -220,6 +224,9 @@ def hp2ssht_index(hp_flm_in, lmax=None):
     return ssht_flm
 
 def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0., ssht_index=True):
+    if pygsm is None:
+        raise ImportError("You need pygsm to use this function. "
+                          "Install RIMEz with `pip install .[gsm]`")
 
     k_b = 1.38064852e-23 # joules/kelvin
     c = 299792458. # meters/second
@@ -341,6 +348,10 @@ def linear_interp_rotation(hmap, R):
 
 #### old thing
 def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.):
+    if pygsm is None:
+        raise ImportError("You need pygsm to use this function. "
+                          "Install RIMEz with `pip install .[gsm]`")
+
     if R_g2c is None:
         R_g2c = hp.rotator.Rotator(coord=['G','C']).mat
 

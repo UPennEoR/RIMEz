@@ -1,7 +1,6 @@
 import numpy as np
 import numba as nb
 
-import pyssht
 import ssht_numba as sshtn
 
 @nb.njit

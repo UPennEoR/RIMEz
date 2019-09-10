@@ -6,11 +6,14 @@ from astropy import coordinates as coord
 from astropy import units
 from astropy.time import Time, TimeDelta
 from astropy import _erfa
-from astropy.coordinates.builtin_frames.utils import get_jd12
 
 import healpy as hp
 import pyssht
-from spin1_beam_model.cst_processing import ssht_power_spectrum
+
+try:
+    from spin1_beam_model.cst_processing import ssht_power_spectrum
+except ImportError:
+    ssht_power_spectrum = None
 
 import pyuvdata
 from pyuvdata import UVData
@@ -382,6 +385,8 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     by setting the baseline length to zero, or the angular power spectrum
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
+    if ssht_power_spectrum is None:
+        raise ImportError("Cannot use this function without installing spin1_beam_model!")
 
     c_mps = 299792458. # meter/second
 
@@ -429,6 +434,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     K00 = M00 * fringe
 
     K00_lm = pyssht.forward(K00, L_use, Spin=0, Method='MWSS', Reality=False)
+
 
     Cl_K00 = ssht_power_spectrum(K00_lm)
 

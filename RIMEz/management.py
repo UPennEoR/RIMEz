@@ -9,24 +9,31 @@ import ssht_numba as sshtn
 
 import utils
 import rime_funcs
-import beam_models
 import sky_models
+import warnings
+import importlib
 
-from RIMEz import __path__ as RIMEz_path
-from ssht_numba import __path__ as ssht_numba_path
-from spin1_beam_model import __path__ as spin1_beam_model_path
+def get_repo_hashes(modules=None):
+    if modules is None:
+        modules = ['RIMEz', 'ssht_numba', 'spin1_beam_model']
 
-git_repo_paths = {
-    'RIMEz': RIMEz_path[0],
-    'ssht_numba': ssht_numba_path[0],
-    'spin1_beam_model': spin1_beam_model_path[0],
-}
+    repo_versions = {}
+    for module in modules:
+        try:
+            mod = importlib.import_module(module)
+        except ImportError:
+            continue
 
-repo_versions = {}
-for repo_name in git_repo_paths:
-    repo_path = git_repo_paths[repo_name]
-    repo = git.Repo(repo_path, search_parent_directories=True)
-    repo_versions[repo_name + '_commit_hash'] = repo.head.object.hexsha
+        try:
+            repo = git.Repo(mod.__path__[0], search_parent_directories=True)
+        except git.InvalidGitRepositoryError:
+            warnings.warn("{} is installed not as a git repo, no hash generated.".format(module))
+            continue
+
+        repo_versions[module+"_commit_hash"] = repo.head.object.hexsha
+    return repo_versions
+
+repo_versions = get_repo_hashes()
 
 class VisibilityCalculation(object):
 
