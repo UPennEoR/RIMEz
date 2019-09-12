@@ -10,13 +10,14 @@ subprocess.call("make clean; make", cwd=exec_dir, shell=True)
 req = [
     "numpy",
     "numba",
-    "ssht_numba @ git+git://github.com/zacharymartinot/ssht_numba",
+    "ssht_numba @ git+git://github.com/UPennEoR/ssht_numba",
+    "pyssht @ git+git://github.com/UPennEoR/ssht"
     'cffi',
     'gitpython',
     'h5py',
     'scipy',
     'healpy',
-    "spin1_beam_model @ git+git://github.com/zacharymartinot/spin1_beam_model",
+    "spin1_beam_model @ git+git://github.com/UPennEoR/spin1_beam_model",
 ]
 
 req_gsm = [

@@ -31,7 +31,7 @@ with `conda` so they are not installed with `pip`::
     $ conda install numpy numba cffi gitpython h5py scipy
 
 Then, installation should be as simple as `pip install .` from the top-level directory,
-or `pip install git+git://github.com/UPennEoR/ssht_numba`. If you installed `FFTW` to a
+or `pip install git+git://github.com/UPennEoR/RIMEz`. If you installed `FFTW` to a
 non-default location, then you can point to its location using the environment variable
 `FFTW_PATH`, which should be the path to the `lib` folder, eg.:
 `FFTW_PATH=/usr/lib pip install .`.
