@@ -11,7 +11,6 @@ req = [
     "numpy",
     "numba",
     "ssht_numba @ git+git://github.com/UPennEoR/ssht_numba",
-    "pyssht @ git+git://github.com/UPennEoR/ssht"
     'cffi',
     'gitpython',
     'h5py',
@@ -29,7 +28,7 @@ req_all = req_gsm
 req_dev = [
     'pytest',
     'sphinx',
-    'bump2version'
+    'bump2version',
 ]
 
 setup(

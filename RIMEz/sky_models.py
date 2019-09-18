@@ -4,7 +4,6 @@ from scipy import interpolate
 
 import h5py
 
-import pyssht
 import ssht_numba as sshtn
 
 try:
@@ -107,7 +106,7 @@ def point_sources_harmonics(I, RA, dec, L, ell_min=0):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = pyssht.generate_dl(np.pi/2., L)
+    delta = sshtn.generate_dl(np.pi/2., L)
 
     Ilm = inner_point_source_harmonics(I, RA, dec, L, ell_min, delta)
     return Ilm
@@ -144,7 +143,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = pyssht.generate_dl(np.pi/2., L)
+    delta = sshtn.generate_dl(np.pi/2., L)
 
     I_split = list(np.array_split(I, N_blocks, axis=1))
     RA_split = list(np.array_split(RA, N_blocks))
@@ -171,7 +170,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
 #     dec = np.array(dec)
 #     codec = np.pi/2. - dec
 #
-#     delta = pyssht.generate_dl(np.pi/2., L)
+#     delta = sshtn.generate_dl(np.pi/2., L)
 #
 #     Ilm = np.zeros((I.shape[0], L**2), dtype=np.complex128)
 #     for ell in range(L):
@@ -215,7 +214,7 @@ def hp2ssht_index(hp_flm_in, lmax=None):
     for el in range(L):
         for m in range(-el, el+1):
             hp_ind = hp.Alm.getidx(lmax, el, abs(m))
-            ssht_ind = pyssht.elm2ind(el, m)
+            ssht_ind = sshtn.elm2ind(el, m)
             if m >= 0:
                 ssht_flm[:,ssht_ind] = np.exp(1j*m*np.pi)*hp_flm[:,hp_ind]
             else:
