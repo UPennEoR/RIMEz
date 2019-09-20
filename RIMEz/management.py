@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import git
 import h5py
@@ -410,7 +411,12 @@ class PointSourceSpectraSet(object):
 
         with h5py.File(self.file_path, "r") as h5f:
             self.nu_mhz = h5f["nu_mhz"].value
-            self.Iflux = h5f["Iflux"].value
+            if "Iflux" not in h5f.keys():
+                warnings.warn("This is an old save file. Rewrite with "
+                              "save_to_file() to ensure future compatibility.")
+                self.Iflux = h5f["I"].value
+            else:
+                self.Iflux = h5f["Iflux"].value
             self.RA = h5f["RA"].value
             self.Dec = h5f["Dec"].value
             self.coordinates = h5f["coordinates"].value
