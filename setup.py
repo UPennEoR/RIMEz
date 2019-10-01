@@ -2,8 +2,7 @@ import os
 import subprocess
 from setuptools import setup, find_packages
 
-# Make the extension. This is not the "standard" way to do it, but it works.
-exec_dir = os.path.join(os.getcwd(), 'RIMEz', 'dfitpack_wrappers')
+exec_dir = os.path.join(os.getcwd(), "RIMEz", "dfitpack_wrappers")
 subprocess.call("make clean; make", cwd=exec_dir, shell=True)
 
 
@@ -46,5 +45,5 @@ setup(
         'dev': req_dev + req_all,
         'gsm': req_gsm,
         'all': req_all,
-    }
+    },
 )
