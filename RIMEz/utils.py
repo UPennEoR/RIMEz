@@ -1,5 +1,4 @@
 import numpy as np
-import numba as nb
 
 from scipy import optimize, linalg
 from astropy import coordinates as coord
@@ -8,7 +7,7 @@ from astropy.time import Time, TimeDelta
 from astropy import _erfa
 
 import healpy as hp
-import pyssht
+import ssht_numba as sshtn
 
 try:
     from spin1_beam_model.cst_processing import ssht_power_spectrum
@@ -307,7 +306,7 @@ def get_galactic_to_gcrs_rotation_matrix():
 
 def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
 
-    ttheta, pphi = pyssht.sample_positions(L_use, Method='MWSS', Grid=True)
+    ttheta, pphi = sshtn.mwss_sample_positions(L_use)
 
     alt = np.pi/2. - ttheta.flatten()
     az = pphi.flatten()
@@ -329,7 +328,8 @@ def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
         B = np.abs(J_i[:,0,0])**2. + np.abs(J_i[:,0,1])**2.
         B = B.reshape(ttheta.shape)
 
-        Blm = pyssht.forward(B, L_use, Spin=0, Method='MWSS', Reality=True)
+        Blm = np.empty([L_use * L_use,], dtype=complex)
+        sshtn.mw_forward_sov_conv_sym_ss_real(B, L_use, Blm)
 
         Omega[ii] = np.sqrt(4*np.pi)*np.real(Blm[0])
         Omegapp[ii] = np.sum(np.abs(Blm)**2.)
@@ -404,7 +404,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     if L_use < 350:
         L_use = 350
 
-    theta, phi = pyssht.sample_positions(L_use, Method='MWSS', Grid=True)
+    theta, phi = sshtn.mwss_sample_positions(L_use)
 
     s = np.zeros(theta.shape + (3,))
     s[...,0] = np.cos(phi)*np.sin(theta)
@@ -433,7 +433,8 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
 
     K00 = M00 * fringe
 
-    K00_lm = pyssht.forward(K00, L_use, Spin=0, Method='MWSS', Reality=False)
+    K00_lm = np.empty([L_use * L_use, ], dtype=complex)
+    sshtn.mw_forward_sov_conv_sym_ss(K00, L_use, 0, K00_lm)
 
 
     Cl_K00 = ssht_power_spectrum(K00_lm)
