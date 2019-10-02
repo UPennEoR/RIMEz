@@ -11,16 +11,12 @@ from astropy import units
 from astropy import _erfa
 
 import healpy as hp
-import ssht_numba as sshtn
-
-try:
-    from spin1_beam_model.cst_processing import ssht_power_spectrum
-except ImportError:
-    ssht_power_spectrum = None
-
 import pyuvdata
 from pyuvdata import UVData
 from pyuvdata.utils import polstr2num
+
+import ssht_numba as sshtn
+from spin1_beam_model.cst_processing import ssht_power_spectrum
 
 from .beam_models import az_shiftflip
 
@@ -421,11 +417,6 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     by setting the baseline length to zero, or the angular power spectrum
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
-    if ssht_power_spectrum is None:
-        raise ImportError(
-            "Cannot use this function without installing spin1_beam_model!"
-        )
-
     c_mps = 299792458.0  # meter/second
 
     b_m = b_m * np.array([1.0, 0, 0])

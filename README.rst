@@ -22,9 +22,11 @@ Installation
 Dependencies
 ------------
 ``RIMEz`` has a child dependency on both ``gfortran`` and ``fftw``. These can
-usually be installed with your package manager. Note that ``fftw`` must be
-installed as a *shared* library (i.e. if compiling yourself, use
-``--enable-shared``).
+usually be installed with your package manager. For macOS users, ``gfortran`` is
+available through ``conda``. If you have ``gfortran`` installed from another
+source (like MacPorts or Homebrew), you may have to create a symlink called
+``gfortran`` to compile successfully. Note that ``fftw`` must be installed as a
+*shared* library (i.e. if compiling yourself, use ``--enable-shared``).
 
 If you are a ``conda`` user, you may wish to manually install the following
 dependencies with ``conda`` so they are not installed with ``pip``::

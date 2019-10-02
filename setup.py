@@ -13,13 +13,13 @@ import distutils.command.build as _build
 req = [
     "numpy",
     "numba",
-    "ssht_numba @ git+git://github.com/UPennEoR/ssht_numba",
     "cffi",
     "gitpython",
     "h5py",
     "scipy",
     "healpy",
     "pyuvdata",
+    "ssht_numba @ git+git://github.com/UPennEoR/ssht_numba",
     "spin1_beam_model @ git+git://github.com/UPennEoR/spin1_beam_model",
 ]
 
@@ -30,7 +30,7 @@ req_all = req_gsm
 req_dev = ["pytest", "sphinx", "bump2version"]
 
 # make sure the fortran library is built before installing
-class custom_build(_build.build):
+class CustomBuild(_build.build):
     def run(self):
         cwd = os.getcwd()
         if spawn.find_executable("make") is None:
@@ -66,5 +66,5 @@ setup(
         "gsm": req_gsm,
         "all": req_all
     },
-    cmdclass={"build": custom_build},
+    cmdclass={"build": CustomBuild},
 )

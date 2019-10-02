@@ -1,11 +1,11 @@
-FC	= gfortran
-FFLAGS	= -O3 -fPIC -g
+FC     = gfortran
+FFLAGS = -O3 -fPIC -g -shared
 
-OBJ = fpbspl.o fpbisp.o bispeu.o 
+OBJ    = fpbspl.o fpbisp.o bispeu.o
 LIBOBJ = dfitpack_wrappers.o
 
 dfitpack_wrappers.so: $(OBJ) $(LIBOBJ)
-	$(FC) $(FFLAGS) -shared $(OBJ) $(LIBOBJ) -o $@
+	$(FC) $(FFLAGS) $(OBJ) $(LIBOBJ) -o $@
 
 %.o: %.f
 	$(FC) $(FFLAGS) -c $*.f
