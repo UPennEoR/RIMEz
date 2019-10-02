@@ -1,49 +1,70 @@
-import os
-import subprocess
-from setuptools import setup, find_packages
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
 
-exec_dir = os.path.join(os.getcwd(), "RIMEz", "dfitpack_wrappers")
-subprocess.call("make clean; make", cwd=exec_dir, shell=True)
+import os
+import sys
+
+from distutils.core import setup
+from distutils import spawn
+import distutils.command.build as _build
 
 
 req = [
     "numpy",
     "numba",
     "ssht_numba @ git+git://github.com/UPennEoR/ssht_numba",
-    'cffi',
-    'gitpython',
-    'h5py',
-    'scipy',
-    'healpy',
+    "cffi",
+    "gitpython",
+    "h5py",
+    "scipy",
+    "healpy",
+    "pyuvdata",
     "spin1_beam_model @ git+git://github.com/UPennEoR/spin1_beam_model",
 ]
 
-req_gsm = [
-    "pygsm @ git+git://github.com/telegraphic/PyGSM"
-]
+req_gsm = ["pygsm @ git+git://github.com/telegraphic/PyGSM"]
 
 req_all = req_gsm
 
-req_dev = [
-    'pytest',
-    'sphinx',
-    'bump2version',
-]
+req_dev = ["pytest", "sphinx", "bump2version"]
+
+# make sure the fortran library is built before installing
+class custom_build(_build.build):
+    def run(self):
+        cwd = os.getcwd()
+        if spawn.find_executable("make") is None:
+            sys.stderr.write("make is required to build this package.\n")
+            sys.exit(-1)
+        _source_dir = os.path.join(
+            os.path.split(__file__)[0], "RIMEz", "dfitpack_wrappers"
+        )
+        try:
+            os.chdir(_source_dir)
+            spawn.spawn(["make", "clean"])
+            spawn.spawn(["make"])
+            os.chdir(cwd)
+        except spawn.DistutilsExecError:
+            sys.stderr.write("Error while building with make\n")
+            sys.exit(-1)
+        _build.build.run(self)
+
 
 setup(
-    name='RIMEz',
-    version='0.1.0',
-    description='Methods and input models for computing visibilities.',
-    url='https://github.com/UPennEOR/RIMEz',
-    author='Zachary Martinot',
-    author_email='zmarti@sas.upenn.edu',
-    packages=find_packages(),
-    package_data={'RIMEz': ['dfitpack_wrappers/dfitpack_wrappers.so']},
+    name="RIMEz",
+    version="0.1.0",
+    description="Methods and input models for computing visibilities.",
+    url="https://github.com/UPennEOR/RIMEz",
+    author="Zachary Martinot",
+    author_email="zmarti@sas.upenn.edu",
+    packages=["RIMEz"],
+    package_data={"RIMEz": ["dfitpack_wrappers/dfitpack_wrappers.so"]},
     zip_safe=False,
     install_requires=req,
     extras_require={
-        'dev': req_dev + req_all,
-        'gsm': req_gsm,
-        'all': req_all,
+        "dev": req_dev + req_all,
+        "gsm": req_gsm,
+        "all": req_all
     },
+    cmdclass={"build": custom_build},
 )

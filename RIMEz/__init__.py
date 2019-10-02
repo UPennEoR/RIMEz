@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 __version__ = "0.1.0"
 
 from . import management

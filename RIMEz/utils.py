@@ -1,8 +1,8 @@
-<<<<<<< HEAD
-import numpy as np
-=======
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 from functools import reduce
->>>>>>> 3a5b4c6232223e0fc9dc21f7417a73035d38c90a
 
 import numpy as np
 from scipy import optimize, linalg
@@ -22,7 +22,7 @@ import pyuvdata
 from pyuvdata import UVData
 from pyuvdata.utils import polstr2num
 
-from beam_models import az_shiftflip
+from .beam_models import az_shiftflip
 
 # misc.
 
@@ -362,7 +362,7 @@ def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
         B = np.abs(J_i[:, 0, 0]) ** 2.0 + np.abs(J_i[:, 0, 1]) ** 2.0
         B = B.reshape(ttheta.shape)
 
-        Blm = np.empty([L_use * L_use,], dtype=complex)
+        Blm = np.empty([L_use * L_use], dtype=complex)
         sshtn.mw_forward_sov_conv_sym_ss_real(B, L_use, Blm)
 
         Omega[ii] = np.sqrt(4 * np.pi) * np.real(Blm[0])
@@ -422,7 +422,9 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
     if ssht_power_spectrum is None:
-        raise ImportError("Cannot use this function without installing spin1_beam_model!")
+        raise ImportError(
+            "Cannot use this function without installing spin1_beam_model!"
+        )
 
     c_mps = 299792458.0  # meter/second
 
@@ -469,9 +471,8 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
 
     K00 = M00 * fringe
 
-    K00_lm = np.empty([L_use * L_use, ], dtype=complex)
+    K00_lm = np.empty([L_use * L_use], dtype=complex)
     sshtn.mw_forward_sov_conv_sym_ss(K00, L_use, 0, K00_lm)
-
 
     Cl_K00 = ssht_power_spectrum(K00_lm)
 

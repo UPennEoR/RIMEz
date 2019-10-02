@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import numpy as np
 import numba as nb
 from scipy import interpolate
@@ -13,7 +17,7 @@ except ImportError:
 
 import healpy as hp
 
-import utils
+from . import utils
 
 # simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
 
@@ -117,7 +121,7 @@ def point_sources_harmonics(I, RA, dec, L, ell_min=0):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = sshtn.generate_dl(np.pi/2., L)
+    delta = sshtn.generate_dl(np.pi / 2.0, L)
 
     Ilm = inner_point_source_harmonics(I, RA, dec, L, ell_min, delta)
     return Ilm
@@ -160,7 +164,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = sshtn.generate_dl(np.pi/2., L)
+    delta = sshtn.generate_dl(np.pi / 2.0, L)
 
     I_split = list(np.array_split(I, N_blocks, axis=1))
     RA_split = list(np.array_split(RA, N_blocks))
@@ -243,10 +247,13 @@ def hp2ssht_index(hp_flm_in, lmax=None):
 
     return ssht_flm
 
-def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0., ssht_index=True):
+
+def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
     if pygsm is None:
-        raise ImportError("You need pygsm to use this function. "
-                          "Install RIMEz with `pip install .[gsm]`")
+        raise ImportError(
+            "You need pygsm to use this function. "
+            "Install RIMEz with `pip install .[gsm]`"
+        )
 
     k_b = 1.38064852e-23  # joules/kelvin
     c = 299792458.0  # meters/second
@@ -377,10 +384,12 @@ def linear_interp_rotation(hmap, R):
 
 
 #### old thing
-def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.):
+def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     if pygsm is None:
-        raise ImportError("You need pygsm to use this function. "
-                          "Install RIMEz with `pip install .[gsm]`")
+        raise ImportError(
+            "You need pygsm to use this function. "
+            "Install RIMEz with `pip install .[gsm]`"
+        )
 
     if R_g2c is None:
         R_g2c = hp.rotator.Rotator(coord=["G", "C"]).mat

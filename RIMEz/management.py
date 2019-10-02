@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import os
 import warnings
 
@@ -27,8 +31,12 @@ git_repo_paths = {
 repo_versions = {}
 for repo_name in git_repo_paths:
     repo_path = git_repo_paths[repo_name]
-    repo = git.Repo(repo_path, search_parent_directories=True)
-    repo_versions[repo_name + "_commit_hash"] = repo.head.object.hexsha
+    try:
+        repo = git.Repo(repo_path, search_parent_directories=True)
+        repo_versions[repo_name + "_commit_hash"] = repo.head.object.hexsha
+    except git.exc.InvalidGitRepositoryError:
+        # this is probably an installed library, so we don't have the git info
+        repo_versions[repo_name + "_commit_hash"] = "unknown"
 
 
 class VisibilityCalculation(object):
@@ -288,7 +296,13 @@ class PointSourceSpectraSet(object):
     """
 
     def __init__(
-        self, nu_mhz=None, Iflux=None, RA=None, Dec=None, coordinates="GCRS", file_path=None
+        self,
+        nu_mhz=None,
+        Iflux=None,
+        RA=None,
+        Dec=None,
+        coordinates="GCRS",
+        file_path=None,
     ):
         if file_path is None:
 
@@ -413,8 +427,10 @@ class PointSourceSpectraSet(object):
         with h5py.File(self.file_path, "r") as h5f:
             self.nu_mhz = h5f["nu_mhz"].value
             if "Iflux" not in h5f.keys():
-                warnings.warn("This is an old save file. Rewrite with "
-                              "save_to_file() to ensure future compatibility.")
+                warnings.warn(
+                    "This is an old save file. Rewrite with "
+                    "save_to_file() to ensure future compatibility."
+                )
                 self.Iflux = h5f["I"].value
             else:
                 self.Iflux = h5f["Iflux"].value
