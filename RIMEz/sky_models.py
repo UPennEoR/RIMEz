@@ -263,7 +263,7 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
     # for ii in range(I_init.shape[0]):
     #     rI_init[ii] = linear_interp_rotation(I_init[ii], R_g2c.T)
 
-    lmax = 3 * 512 / 2
+    lmax = 3 * 512 // 2
     Ilm_init = hp.map2alm(I_init, lmax=lmax, pol=False, use_pixel_weights=True)
 
     for i in range(Ilm_init.shape[0]):

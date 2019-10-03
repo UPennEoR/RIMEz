@@ -458,7 +458,7 @@ def visiblity_dft_from_mmodes(era_axis, Vm):
         (era_axis.size,) + Vm.shape[:2] + Vm.shape[3:], dtype=nb.complex128
     )
 
-    Lm = (Vm.shape[2] + 1) / 2
+    Lm = (Vm.shape[2] + 1) // 2
     m_axis = np.arange(-Lm + 1, Lm)
 
     for i in range(era_axis.size):
@@ -500,7 +500,7 @@ def parallel_visibility_dft_from_mmodes(era_axis, Vm, delta_t):
 @nb.njit(parallel=True, nogil=True)
 def inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft, delta_era):
 
-    Lm = (Vm.shape[2] + 1) / 2
+    Lm = (Vm.shape[2] + 1) // 2
     m_axis = np.arange(-Lm + 1, Lm)
 
     zero_ind = np.where(m_axis == 0)
@@ -572,7 +572,7 @@ def devectorize_vis_vec(vvec_in):
 
 def visibility_from_mmodes(Vm, era_axis, up_sampling=10):
 
-    Lm = (Vm.shape[2] + 1) / 2
+    Lm = (Vm.shape[2] + 1) // 2
     m_axis = np.arange(-Lm + 1, Lm)
 
     N_padded_m = up_sampling * (Vm.shape[2] + 1) - 1
@@ -580,12 +580,12 @@ def visibility_from_mmodes(Vm, era_axis, up_sampling=10):
     Vm_padded = np.zeros(padded_shape, dtype=np.complex128)
 
     N_fftup = N_padded_m
-    L_fftup = (N_fftup + 1) / 2
+    L_fftup = (N_fftup + 1) // 2
 
-    ind0 = m_axis[0] + (N_fftup - 1) / 2
-    ind1 = m_axis[-1] + (N_fftup - 1) / 2
+    ind0 = m_axis[0] + (N_fftup - 1) // 2
+    ind1 = m_axis[-1] + (N_fftup - 1) // 2
 
-    ang_shift_up = np.pi - 2 * np.pi * (L_fftup - 1) / (2 * L_fftup - 1)
+    ang_shift_up = np.pi - 2 * np.pi * (L_fftup - 1) // (2 * L_fftup - 1)
     # phase_shift_up = np.exp(-1j*m_axis*ang_shift_up)
     phases = m_axis * ang_shift_up
     phase_shift_up = np.cos(phases) - 1j * np.sin(phases)
@@ -599,7 +599,7 @@ def visibility_from_mmodes(Vm, era_axis, up_sampling=10):
                     )
 
     era_fftup_axis = (
-        2 * np.pi * np.arange(-(N_fftup - 1) / 2, (N_fftup - 1) / 2 + 1) / N_fftup
+        2 * np.pi * np.arange(-(N_fftup - 1) // 2, (N_fftup - 1) // 2 + 1) // N_fftup
     )
     era_fftup_axis += np.pi
 

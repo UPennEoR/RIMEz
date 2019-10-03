@@ -638,7 +638,7 @@ def inflate_uvdata_redundancies(uvd, red_gps):
 
     # number of baselines = (Nants*(Nants+1))/2, including autos
     Nants = uvd.Nants_telescope
-    assert Nbls_full == (Nants * (Nants + 1)) / 2
+    assert Nbls_full == (Nants * (Nants + 1)) // 2
 
     # the baseline numbers in the compressed dataset
     bl_array_comp = uvd.baseline_array
