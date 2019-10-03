@@ -16,27 +16,16 @@ import ssht_numba as sshtn
 from . import utils
 from . import rime_funcs
 from . import sky_models
+from . import __version__
 
-# where does this come from?
-from . import __path__ as RIMEz_path
-from ssht_numba import __path__ as ssht_numba_path
-from spin1_beam_model import __path__ as spin1_beam_model_path
+import ssht_numba as sshtn
+import spin1_beam_model as s1b
 
-git_repo_paths = {
-    "RIMEz": RIMEz_path[0],
-    "ssht_numba": ssht_numba_path[0],
-    "spin1_beam_model": spin1_beam_model_path[0],
+repo_versions = {
+    "RIMEz": __version__,
+    "ssht_numba": sshtn.__version__,
+    "spin1_beam_model": s1b.__version__,
 }
-
-repo_versions = {}
-for repo_name in git_repo_paths:
-    repo_path = git_repo_paths[repo_name]
-    try:
-        repo = git.Repo(repo_path, search_parent_directories=True)
-        repo_versions[repo_name + "_commit_hash"] = repo.head.object.hexsha
-    except git.exc.InvalidGitRepositoryError:
-        # this is probably an installed library, so we don't have the git info
-        repo_versions[repo_name + "_commit_hash"] = "unknown"
 
 
 class VisibilityCalculation(object):
@@ -163,7 +152,7 @@ class VisibilityCalculation(object):
 
             for label in repo_versions:
                 commit_hash_str = np.string_(repo_versions[label])
-                h5f.create_dataset(label, data=commit_hash_str)
+                h5f.create_dataset(label+"_version", data=commit_hash_str)
 
     def write_visibility_time_series(self, file_path):
         raise NotImplementedError

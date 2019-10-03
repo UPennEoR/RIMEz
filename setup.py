@@ -5,7 +5,8 @@
 import os
 import sys
 
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup
 from distutils import spawn
 import distutils.command.build as _build
 
@@ -67,4 +68,6 @@ setup(
         "all": req_all
     },
     cmdclass={"build": CustomBuild},
+    use_scm_version=True,
+    setup_requires=['setuptools_scm']
 )
