@@ -5,7 +5,6 @@
 import os
 import sys
 
-#from distutils.core import setup
 from setuptools import setup
 from distutils import spawn
 import distutils.command.build as _build
@@ -62,12 +61,14 @@ setup(
     package_data={"RIMEz": ["dfitpack_wrappers/dfitpack_wrappers.so"]},
     zip_safe=False,
     install_requires=req,
+    # fmt: off
     extras_require={
         "dev": req_dev + req_all,
         "gsm": req_gsm,
         "all": req_all
     },
+    # fmt: on
     cmdclass={"build": CustomBuild},
     use_scm_version=True,
-    setup_requires=['setuptools_scm']
+    setup_requires=["setuptools_scm"],
 )

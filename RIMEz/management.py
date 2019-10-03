@@ -16,16 +16,20 @@ import ssht_numba as sshtn
 from . import utils
 from . import rime_funcs
 from . import sky_models
-from . import __version__
 
 import ssht_numba as sshtn
 import spin1_beam_model as s1b
 
-repo_versions = {
-    "RIMEz": __version__,
-    "ssht_numba": sshtn.__version__,
-    "spin1_beam_model": s1b.__version__,
-}
+
+def _get_versions():
+    from . import __version__
+
+    repo_versions = {
+        "RIMEz": __version__,
+        "ssht_numba": sshtn.__version__,
+        "spin1_beam_model": s1b.__version__,
+    }
+    return repo_versions
 
 
 class VisibilityCalculation(object):
@@ -141,6 +145,8 @@ class VisibilityCalculation(object):
         if getattr(self, "Vm", None) is None:
             raise ValueError("No visibility data available for writing.")
 
+        repo_versions = _get_versions()
+
         if overwrite is True and os.path.exists(file_path):
             os.remove(file_path)
 
@@ -152,7 +158,7 @@ class VisibilityCalculation(object):
 
             for label in repo_versions:
                 commit_hash_str = np.string_(repo_versions[label])
-                h5f.create_dataset(label+"_version", data=commit_hash_str)
+                h5f.create_dataset(label + "_version", data=commit_hash_str)
 
     def write_visibility_time_series(self, file_path):
         raise NotImplementedError
