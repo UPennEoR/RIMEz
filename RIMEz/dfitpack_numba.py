@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import os
 
 import numpy as np
@@ -7,7 +11,7 @@ import cffi
 ffi = cffi.FFI()
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-libpath = os.path.join(current_dir, "dfitpack_wrappers/dfitpack_wrappers.so")
+libpath = os.path.join(current_dir, "dfitpack_wrappers", "dfitpack_wrappers.so")
 
 dfitpack_wrappers_lib = ffi.dlopen(libpath)
 

@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import numpy as np
 import numba as nb
 import ctypes
 
 from spin1_beam_model.jones_matrix_field import AntennaFarFieldResponse
 
-from dfitpack_numba import bispeu_nb
+from .dfitpack_numba import bispeu_nb
 
 
 def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed=False):
@@ -22,9 +26,7 @@ def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed
     """
 
     if np.any(nu_axis < 1e6):
-        msg = (
-            "Warning: input frequencies look like they might not be in units of Hz."
-        )
+        msg = "Warning: input frequencies look like they might not be in units of Hz."
         print(msg)
 
     AR = AntennaFarFieldResponse(full_file_name)

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 from functools import reduce
 
 import numpy as np
@@ -5,17 +9,16 @@ from scipy import optimize, linalg
 from astropy import coordinates as coord
 from astropy import units
 from astropy import _erfa
-from astropy.time import Time
 
 import healpy as hp
-import pyssht
-from spin1_beam_model.cst_processing import ssht_power_spectrum
-
 import pyuvdata
 from pyuvdata import UVData
 from pyuvdata.utils import polstr2num
 
-from beam_models import az_shiftflip
+import ssht_numba as sshtn
+from spin1_beam_model.cst_processing import ssht_power_spectrum
+
+from .beam_models import az_shiftflip
 
 # misc.
 
@@ -333,7 +336,7 @@ def get_galactic_to_gcrs_rotation_matrix():
 
 def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
 
-    ttheta, pphi = pyssht.sample_positions(L_use, Method="MWSS", Grid=True)
+    ttheta, pphi = sshtn.mwss_sample_positions(L_use)
 
     alt = np.pi / 2.0 - ttheta.flatten()
     az = pphi.flatten()
@@ -355,7 +358,8 @@ def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
         B = np.abs(J_i[:, 0, 0]) ** 2.0 + np.abs(J_i[:, 0, 1]) ** 2.0
         B = B.reshape(ttheta.shape)
 
-        Blm = pyssht.forward(B, L_use, Spin=0, Method="MWSS", Reality=True)
+        Blm = np.empty([L_use * L_use], dtype=complex)
+        sshtn.mw_forward_sov_conv_sym_ss_real(B, L_use, Blm)
 
         Omega[ii] = np.sqrt(4 * np.pi) * np.real(Blm[0])
         Omegapp[ii] = np.sum(np.abs(Blm) ** 2.0)
@@ -413,7 +417,6 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     by setting the baseline length to zero, or the angular power spectrum
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
-
     c_mps = 299792458.0  # meter/second
 
     b_m = b_m * np.array([1.0, 0, 0])
@@ -430,7 +433,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     if L_use < 350:
         L_use = 350
 
-    theta, phi = pyssht.sample_positions(L_use, Method="MWSS", Grid=True)
+    theta, phi = sshtn.mwss_sample_positions(L_use)
 
     s = np.zeros(theta.shape + (3,))
     s[..., 0] = np.cos(phi) * np.sin(theta)
@@ -459,7 +462,8 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
 
     K00 = M00 * fringe
 
-    K00_lm = pyssht.forward(K00, L_use, Spin=0, Method="MWSS", Reality=False)
+    K00_lm = np.empty([L_use * L_use], dtype=complex)
+    sshtn.mw_forward_sov_conv_sym_ss(K00, L_use, 0, K00_lm)
 
     Cl_K00 = ssht_power_spectrum(K00_lm)
 
