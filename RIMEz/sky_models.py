@@ -1,15 +1,23 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import numpy as np
 import numba as nb
 from scipy import interpolate
 
 import h5py
 
-import pyssht
 import ssht_numba as sshtn
-import pygsm
+
+try:
+    import pygsm
+except ImportError:
+    pygsm = None
+
 import healpy as hp
 
-import utils
+from . import utils
 
 # simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
 
@@ -113,7 +121,7 @@ def point_sources_harmonics(I, RA, dec, L, ell_min=0):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = pyssht.generate_dl(np.pi / 2.0, L)
+    delta = sshtn.generate_dl(np.pi / 2.0, L)
 
     Ilm = inner_point_source_harmonics(I, RA, dec, L, ell_min, delta)
     return Ilm
@@ -156,7 +164,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     RA = np.array(RA)
     dec = np.array(dec)
 
-    delta = pyssht.generate_dl(np.pi / 2.0, L)
+    delta = sshtn.generate_dl(np.pi / 2.0, L)
 
     I_split = list(np.array_split(I, N_blocks, axis=1))
     RA_split = list(np.array_split(RA, N_blocks))
@@ -188,7 +196,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
 #     dec = np.array(dec)
 #     codec = np.pi/2. - dec
 #
-#     delta = pyssht.generate_dl(np.pi/2., L)
+#     delta = sshtn.generate_dl(np.pi/2., L)
 #
 #     Ilm = np.zeros((I.shape[0], L**2), dtype=np.complex128)
 #     for ell in range(L):
@@ -229,7 +237,7 @@ def hp2ssht_index(hp_flm_in, lmax=None):
     for el in range(L):
         for m in range(-el, el + 1):
             hp_ind = hp.Alm.getidx(lmax, el, abs(m))
-            ssht_ind = pyssht.elm2ind(el, m)
+            ssht_ind = sshtn.elm2ind(el, m)
             if m >= 0:
                 ssht_flm[:, ssht_ind] = np.exp(1j * m * np.pi) * hp_flm[:, hp_ind]
             else:
@@ -241,6 +249,11 @@ def hp2ssht_index(hp_flm_in, lmax=None):
 
 
 def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
+    if pygsm is None:
+        raise ImportError(
+            "You need pygsm to use this function. "
+            "Install RIMEz with `pip install .[gsm]`"
+        )
 
     k_b = 1.38064852e-23  # joules/kelvin
     c = 299792458.0  # meters/second
@@ -263,7 +276,7 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
     # for ii in range(I_init.shape[0]):
     #     rI_init[ii] = linear_interp_rotation(I_init[ii], R_g2c.T)
 
-    lmax = 3 * 512 / 2
+    lmax = 3 * 512 // 2
     Ilm_init = hp.map2alm(I_init, lmax=lmax, pol=False, use_pixel_weights=True)
 
     for i in range(Ilm_init.shape[0]):
@@ -370,8 +383,14 @@ def linear_interp_rotation(hmap, R):
     return hp.get_interp_val(hmap, t, p)
 
 
-# old thing
+#### old thing
 def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
+    if pygsm is None:
+        raise ImportError(
+            "You need pygsm to use this function. "
+            "Install RIMEz with `pip install .[gsm]`"
+        )
+
     if R_g2c is None:
         R_g2c = hp.rotator.Rotator(coord=["G", "C"]).mat
 

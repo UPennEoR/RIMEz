@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 from functools import reduce
 
 import numpy as np
@@ -8,14 +12,14 @@ from astropy import _erfa
 from astropy.time import Time
 
 import healpy as hp
-import pyssht
-from spin1_beam_model.cst_processing import ssht_power_spectrum
-
 import pyuvdata
 from pyuvdata import UVData
 from pyuvdata.utils import polstr2num
 
-from beam_models import az_shiftflip
+import ssht_numba as sshtn
+from spin1_beam_model.cst_processing import ssht_power_spectrum
+
+from .beam_models import az_shiftflip
 
 # misc.
 
@@ -166,14 +170,35 @@ def JD2era_tot(JD):
     theta = 2 * np.pi * (0.7790572732640 + 1.00273781191135448 * D_U)
     return theta
 
-
 def era2JD(era, nearby_JD):
     def f(jd):
         return era - JD2era_tot(jd)
 
-    JD_out = optimize.newton(f, nearby_JD, tol=1e-10)
+    JD_out = optimize.newton(f, nearby_JD, tol=1e-8)
     return JD_out
 
+def era_tot2JD(theta):
+    """
+    Parameters
+    ----------
+    theta: float, array
+        Total earth rotation angle in radians
+
+    Returns
+    -------
+    JD: float, array
+        The Julian Date correponding to the input total earth rotation angle
+
+    This function (and it's inverse) could be written using
+    the two-part JD form for higher precision, unclear if necessary at this point.
+    1 arcsecond of earth rotation is a difference of 7.69738107919693e-07 in JD,
+    which is getting into the last couple digits of a 64bit JD float.
+    """
+    b = 1.00273781191135448
+    a = 0.7790572732640
+    D_U = (( theta / 2 / np.pi ) - a) / b
+    JD = D_U + 2451545.0
+    return JD
 
 def get_rotations_realistic(era_axis, JD_INIT, array_location):
     p1 = np.array([1.0, 0.0, 0.0])
@@ -331,9 +356,9 @@ def get_galactic_to_gcrs_rotation_matrix():
 # Things derived from beam functions
 
 
-def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
+def beam_func_to_Omegas_ssht(nu_hz, beam_func, L_use=200, beam_index=0):
 
-    ttheta, pphi = pyssht.sample_positions(L_use, Method="MWSS", Grid=True)
+    ttheta, pphi = sshtn.mwss_sample_grid(L_use)
 
     alt = np.pi / 2.0 - ttheta.flatten()
     az = pphi.flatten()
@@ -355,7 +380,8 @@ def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
         B = np.abs(J_i[:, 0, 0]) ** 2.0 + np.abs(J_i[:, 0, 1]) ** 2.0
         B = B.reshape(ttheta.shape)
 
-        Blm = pyssht.forward(B, L_use, Spin=0, Method="MWSS", Reality=True)
+        Blm = np.empty([L_use * L_use], dtype=complex)
+        sshtn.mw_forward_sov_conv_sym_ss_real(B, L_use, Blm)
 
         Omega[ii] = np.sqrt(4 * np.pi) * np.real(Blm[0])
         Omegapp[ii] = np.sum(np.abs(Blm) ** 2.0)
@@ -413,7 +439,6 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     by setting the baseline length to zero, or the angular power spectrum
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
-
     c_mps = 299792458.0  # meter/second
 
     b_m = b_m * np.array([1.0, 0, 0])
@@ -430,7 +455,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     if L_use < 350:
         L_use = 350
 
-    theta, phi = pyssht.sample_positions(L_use, Method="MWSS", Grid=True)
+    theta, phi = sshtn.mwss_sample_positions(L_use)
 
     s = np.zeros(theta.shape + (3,))
     s[..., 0] = np.cos(phi) * np.sin(theta)
@@ -459,7 +484,8 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
 
     K00 = M00 * fringe
 
-    K00_lm = pyssht.forward(K00, L_use, Spin=0, Method="MWSS", Reality=False)
+    K00_lm = np.empty([L_use * L_use], dtype=complex)
+    sshtn.mw_forward_sov_conv_sym_ss(K00, L_use, 0, K00_lm)
 
     Cl_K00 = ssht_power_spectrum(K00_lm)
 
@@ -638,7 +664,7 @@ def inflate_uvdata_redundancies(uvd, red_gps):
 
     # number of baselines = (Nants*(Nants+1))/2, including autos
     Nants = uvd.Nants_telescope
-    assert Nbls_full == (Nants * (Nants + 1)) / 2
+    assert Nbls_full == (Nants * (Nants + 1)) // 2
 
     # the baseline numbers in the compressed dataset
     bl_array_comp = uvd.baseline_array

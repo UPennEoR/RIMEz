@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2019 UPennEoR
+# Licensed under the MIT License
+
 import os
 import warnings
 
@@ -8,26 +12,24 @@ import numpy as np
 
 import ssht_numba as sshtn
 
+
 from . import utils
 from . import rime_funcs
 from . import sky_models
 
-# where does this come from?
-from . import __path__ as RIMEz_path
-from ssht_numba import __path__ as ssht_numba_path
-from spin1_beam_model import __path__ as spin1_beam_model_path
+import ssht_numba as sshtn
+import spin1_beam_model as s1b
 
-git_repo_paths = {
-    "RIMEz": RIMEz_path[0],
-    "ssht_numba": ssht_numba_path[0],
-    "spin1_beam_model": spin1_beam_model_path[0],
-}
 
-repo_versions = {}
-for repo_name in git_repo_paths:
-    repo_path = git_repo_paths[repo_name]
-    repo = git.Repo(repo_path, search_parent_directories=True)
-    repo_versions[repo_name + "_commit_hash"] = repo.head.object.hexsha
+def _get_versions():
+    from . import __version__
+
+    repo_versions = {
+        "RIMEz": __version__,
+        "ssht_numba": sshtn.__version__,
+        "spin1_beam_model": s1b.__version__,
+    }
+    return repo_versions
 
 
 class VisibilityCalculation(object):
@@ -143,6 +145,8 @@ class VisibilityCalculation(object):
         if getattr(self, "Vm", None) is None:
             raise ValueError("No visibility data available for writing.")
 
+        repo_versions = _get_versions()
+
         if overwrite is True and os.path.exists(file_path):
             os.remove(file_path)
 
@@ -154,7 +158,7 @@ class VisibilityCalculation(object):
 
             for label in repo_versions:
                 commit_hash_str = np.string_(repo_versions[label])
-                h5f.create_dataset(label, data=commit_hash_str)
+                h5f.create_dataset(label + "_version", data=commit_hash_str)
 
     def write_visibility_time_series(self, file_path):
         raise NotImplementedError
@@ -287,7 +291,13 @@ class PointSourceSpectraSet(object):
     """
 
     def __init__(
-        self, nu_mhz=None, Iflux=None, RA=None, Dec=None, coordinates="GCRS", file_path=None
+        self,
+        nu_mhz=None,
+        Iflux=None,
+        RA=None,
+        Dec=None,
+        coordinates="GCRS",
+        file_path=None,
     ):
         if file_path is None:
 
@@ -412,8 +422,10 @@ class PointSourceSpectraSet(object):
         with h5py.File(self.file_path, "r") as h5f:
             self.nu_mhz = h5f["nu_mhz"].value
             if "Iflux" not in h5f.keys():
-                warnings.warn("This is an old save file. Rewrite with "
-                              "save_to_file() to ensure future compatibility.")
+                warnings.warn(
+                    "This is an old save file. Rewrite with "
+                    "save_to_file() to ensure future compatibility."
+                )
                 self.Iflux = h5f["I"].value
             else:
                 self.Iflux = h5f["Iflux"].value
