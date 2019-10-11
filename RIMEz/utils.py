@@ -9,6 +9,7 @@ from scipy import optimize, linalg
 from astropy import coordinates as coord
 from astropy import units
 from astropy import _erfa
+from astropy.time import Time
 
 import healpy as hp
 import pyuvdata
@@ -169,14 +170,35 @@ def JD2era_tot(JD):
     theta = 2 * np.pi * (0.7790572732640 + 1.00273781191135448 * D_U)
     return theta
 
-
 def era2JD(era, nearby_JD):
     def f(jd):
         return era - JD2era_tot(jd)
 
-    JD_out = optimize.newton(f, nearby_JD, tol=1e-10)
+    JD_out = optimize.newton(f, nearby_JD, tol=1e-8)
     return JD_out
 
+def era_tot2JD(theta):
+    """
+    Parameters
+    ----------
+    theta: float, array
+        Total earth rotation angle in radians
+
+    Returns
+    -------
+    JD: float, array
+        The Julian Date correponding to the input total earth rotation angle
+
+    This function (and it's inverse) could be written using
+    the two-part JD form for higher precision, unclear if necessary at this point.
+    1 arcsecond of earth rotation is a difference of 7.69738107919693e-07 in JD,
+    which is getting into the last couple digits of a 64bit JD float.
+    """
+    b = 1.00273781191135448
+    a = 0.7790572732640
+    D_U = (( theta / 2 / np.pi ) - a) / b
+    JD = D_U + 2451545.0
+    return JD
 
 def get_rotations_realistic(era_axis, JD_INIT, array_location):
     p1 = np.array([1.0, 0.0, 0.0])
@@ -334,9 +356,9 @@ def get_galactic_to_gcrs_rotation_matrix():
 # Things derived from beam functions
 
 
-def beam_func_to_Omegas_pyssht(nu_hz, beam_func, L_use=200, beam_index=0):
+def beam_func_to_Omegas_ssht(nu_hz, beam_func, L_use=200, beam_index=0):
 
-    ttheta, pphi = sshtn.mwss_sample_positions(L_use)
+    ttheta, pphi = sshtn.mwss_sample_grid(L_use)
 
     alt = np.pi / 2.0 - ttheta.flatten()
     az = pphi.flatten()
