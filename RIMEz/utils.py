@@ -170,12 +170,14 @@ def JD2era_tot(JD):
     theta = 2 * np.pi * (0.7790572732640 + 1.00273781191135448 * D_U)
     return theta
 
+
 def era2JD(era, nearby_JD):
     def f(jd):
         return era - JD2era_tot(jd)
 
     JD_out = optimize.newton(f, nearby_JD, tol=1e-8)
     return JD_out
+
 
 def era_tot2JD(theta):
     """
@@ -196,9 +198,10 @@ def era_tot2JD(theta):
     """
     b = 1.00273781191135448
     a = 0.7790572732640
-    D_U = (( theta / 2 / np.pi ) - a) / b
+    D_U = ((theta / 2 / np.pi) - a) / b
     JD = D_U + 2451545.0
     return JD
+
 
 def get_rotations_realistic(era_axis, JD_INIT, array_location):
     p1 = np.array([1.0, 0.0, 0.0])
