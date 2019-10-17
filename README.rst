@@ -76,7 +76,25 @@ developing, we recommend using *all* of them by installing the ``dev`` extra
 Development
 ===========
 To install `RIMEz` for development, see above.
+We *strongly* recommend installing the provided pre-commit hooks the first time you
+clone the repo::
+
+  $ pre-commit install
+
+This will allow linting checks (and auto-fixes!) to be performed automatically
+whenever you commit.
 
 Testing
 -------
-To run tests locally, use
+To run tests locally, use ``tox``. This is preferred over using ``pytest`` directly
+because it also tests the package installation and setup. You can run a single
+tox environment by using ``tox -e ENVNAME``. In particular, to run the linting
+checks, use ``tox -e lint`` (however, these exact checks will be run when you commit,
+if you have installed the pre-commit hooks, as above).
+
+Versioning
+----------
+We use ``setuptools_scm`` for versioning the code. To create a new version, we recommend
+creating a new dedicated branch to bump the version. On this branch, update the
+``CHANGELOG.rst``, and make a commit with an associated git tag with the format
+``vMAJOR.MINOR.PATCH``. Once merged into master, the new version will be active.
