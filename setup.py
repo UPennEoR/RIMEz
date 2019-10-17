@@ -14,7 +14,7 @@ req = [
     "numpy",
     "numba",
     "cffi",
-    "gitpython",
+    'astropy',
     "h5py",
     "scipy",
     "healpy",
@@ -52,7 +52,6 @@ class CustomBuild(_build.build):
 
 setup(
     name="RIMEz",
-    version="0.1.0",
     description="Methods and input models for computing visibilities.",
     url="https://github.com/UPennEOR/RIMEz",
     author="Zachary Martinot",
