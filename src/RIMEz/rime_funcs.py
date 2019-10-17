@@ -2,10 +2,10 @@
 # Copyright (c) 2019 UPennEoR
 # Licensed under the MIT License
 
-import numpy as np
 import numba as nb
-
+import numpy as np
 import ssht_numba as sshtn
+from scipy import interpolate
 
 
 @nb.njit
@@ -36,10 +36,9 @@ def fast_approx_radec2altaz(ra, dec, R):
 
     p = np.stack((p1, p2, p3), axis=0)
 
+    # q has shape (3, ra.size)
     q = np.dot(R, p)
-    # q.shape is (3, ra.size)
 
-    # alt = np.arcsin(q[2])
     alt = np.arctan(q[2] / np.sqrt(q[0] ** 2.0 + q[1] ** 2.0))
 
     az = np.arctan2(q[1], q[0])
@@ -84,9 +83,9 @@ def vec_psv_constructor(beam_funcs, compile_target="parallel"):
     )
     def vec_psv(R_i, nu_axis, r_axis, ant_pairs, ant_ind2beam_func, S, RA, dec, V_i):
         c = 299792458.0  # meter/second
-        # S.shape is (Nfreq, Nsrc, 4)
-        # RA.shape is (Nsrc,)
-        # dec.shape is (Nsrc,)
+        # S has shape (Nfreq, Nsrc, 4)
+        # RA has shape (Nsrc,)
+        # dec has shape (Nsrc,)
 
         Nbl = ant_pairs.shape[0]
         beam_func_indices = np.unique(ant_ind2beam_func)
@@ -95,7 +94,7 @@ def vec_psv_constructor(beam_funcs, compile_target="parallel"):
         bsigma = make_bool_sigma_tensor()
 
         # s is unit vector toward each source at alpha_i, in ENU basis
-        # s.shape is (Nsrc,3)
+        # s has shape (Nsrc,3)
         s, alt, phi = fast_approx_radec2altaz(RA, dec, R_i.T)
 
         s[:, 0] = np.sin(phi) * np.cos(alt)
@@ -104,35 +103,22 @@ def vec_psv_constructor(beam_funcs, compile_target="parallel"):
 
         v_inds = np.where(alt > 0.0)[0]
 
-        # theta = np.pi/2. - alt
-        #
-        # s[:,0] = np.sin(phi)*np.sin(theta)
-        # s[:,1] = np.cos(phi)*np.sin(theta)
-        # s[:,2] = np.cos(theta)
-        #
-        # # find which sources are visible above the horizon
-        # # v_inds = np.where(theta < np.pi)[0]
-        # v_inds = np.where(theta < np.pi/2.)[0]
-
         if v_inds.size == 0:
             V_i = np.zeros((nu_axis.shape[0], Nbl, 2, 2), dtype=nb.complex128)
 
         else:
             s_v = s[v_inds]
-            # theta_v = theta[v_inds]
             alt_v = alt[v_inds]
             phi_v = phi[v_inds]
 
             S_v = S[:, v_inds, :]
 
             tau_g_v = -2 * np.pi / c * np.dot(r_axis, s_v.T)
-            # tau_g_v = -2*np.pi/c * r_dot_s_func(r_axis, s_v)
 
             for j in range(nu_axis.shape[0]):
                 nu_j = nu_axis[j]
                 S_j_v = S_v[j]
 
-                #             phases = -2*np.pi*nu_j/c * np.dot(r_axis, s_v.T)
                 phases = nu_j * tau_g_v
                 F_arr = np.cos(phases) + 1j * np.sin(phases)
 
@@ -257,9 +243,9 @@ def vec_muv_constructor(beam_funcs, compile_target="parallel"):
                             for i_c in range(2):
                                 for i_d in range(2):
                                     if bsigma[i_b, i_c, 0]:
-                                        i_rav = (
-                                            i_ph + ra.shape[1] * i_th
-                                        )  # equiv to np.ravel_multi_index((i_th, i_ph), (Lb, 2*Lb-1), order='C')
+                                        # equiv to np.ravel_multi_index((i_th, i_ph), (Lb,
+                                        # 2*Lb-1), order='C')
+                                        i_rav = i_ph + ra.shape[1] * i_th
 
                                         A_p_ab = (
                                             F_arr[p, i_rav]
@@ -355,23 +341,10 @@ def mmode_unpol_visibilities(
     alt_v = alt[v_inds]
     az_v = az[v_inds]
 
-    # theta = np.pi/2. - alt
-
-    # s[:,0] = np.sin(phi)*np.sin(theta)
-    # s[:,1] = np.cos(phi)*np.sin(theta)
-    # s[:,2] = np.cos(theta)
-
-    # v_inds = np.where(theta < np.pi/2.)
-
-    # theta_v = theta[v_inds]
-    # phi_v = phi[v_inds]
-
     for i in range(nu_axis.size):
         nu_i = nu_axis[i]
         Slm_i = Slm[i]
 
-        # s_dot_r.shape == (r_axis.shape[0],) + ra.shape
-        # s_dot_r = np.reshape(np.dot(r_axis, s.T), (r_axis.shape[0],) + ra.shape)
         s_dot_r = np.dot(r_axis, s.T)
         phases = -2 * np.pi * nu_i / c * s_dot_r
 
@@ -399,9 +372,9 @@ def mmode_unpol_visibilities(
                             for i_c in range(2):
                                 for i_d in range(2):
                                     if bsigma[i_b, i_c, 0]:
-                                        i_rav = (
-                                            i_ph + ra.shape[1] * i_th
-                                        )  # equiv to np.ravel_multi_index((i_th, i_ph), (Lb, 2*Lb-1), order='C')
+                                        # equiv to np.ravel_multi_index((i_th, i_ph), (Lb,
+                                        # 2*Lb-1), order='C')
+                                        i_rav = i_ph + ra.shape[1] * i_th
 
                                         A_p_ab = (
                                             F_arr[p, i_rav]
@@ -466,14 +439,12 @@ def visiblity_dft_from_mmodes(era_axis, Vm):
     m_axis = np.arange(-Lm + 1, Lm)
 
     for i in range(era_axis.size):
-        # f_kernel = np.exp(-1j*m_axis*(era_axis[i]))
         phases = m_axis * era_axis[i]
         f_kernel = np.cos(phases) - 1j * np.sin(phases)
         for j in range(Vm.shape[0]):
             for k in range(Vm.shape[1]):
                 for a in range(2):
                     for b in range(2):
-                        # V_dft[i,j,k,a,b] = np.sum(Vm[j,k,:,a,b] * f_kernel)
                         for n in range(m_axis.shape[0]):
                             V_dft[i, j, k, a, b] += Vm[j, k, n, a, b] * f_kernel[n]
 
@@ -489,9 +460,8 @@ def parallel_visibility_dft_from_mmodes(era_axis, Vm, delta_t):
     if delta_t == 0.0:
         delta_t = 1e-20
 
-    omega_e = (
-        7.292115e-5
-    )  # radian/second. Mean angular speed of earth, USNO Circular 179 page 16
+    # radian/second. Mean angular speed of earth, USNO Circular 179 page 16
+    omega_e = 7.292115e-5
     delta_era = omega_e * delta_t
     V_dft = np.zeros(
         (era_axis.size,) + Vm.shape[:2] + Vm.shape[3:], dtype=np.complex128
@@ -526,25 +496,6 @@ def inner_parallel_visiblity_dft_from_mmodes(era_axis, Vm, V_dft, delta_era):
 
                             V_dft[i, j, k, a, b] += Vm[j, k, n, a, b] * f_kernel[n]
     return
-
-
-# this turns out to be slower than the njited-dft in the case I tested
-# (~400 fourier modes -> ~8000 time samples), but I'll leave it here...
-#
-# import nfft
-#
-# def visibility_nfft_from_mmodes(era_axis, Vm):
-#     x_axis = era_axis/(2*np.pi)
-#
-#     V_nfft = np.zeros((era_axis.size,) + Vm.shape[:2] + Vm.shape[3:], dtype=np.complex128)
-#
-#     for jj in range(Vm.shape[0]):
-#         for kk in range(Vm.shape[1]):
-#             for aa in range(2):
-#                 for bb in range(2):
-#                     V_nfft[:,jj,kk,aa,bb] = nfft.nfft(x_axis, Vm[jj,kk,:-1,aa,bb], tol=1e-10)
-#
-#     return V_nfft
 
 
 def vectorize_vis_mat(vmat_in):
@@ -590,7 +541,6 @@ def visibility_from_mmodes(Vm, era_axis, up_sampling=10):
     ind1 = m_axis[-1] + (N_fftup - 1) // 2
 
     ang_shift_up = np.pi - 2 * np.pi * (L_fftup - 1) // (2 * L_fftup - 1)
-    # phase_shift_up = np.exp(-1j*m_axis*ang_shift_up)
     phases = m_axis * ang_shift_up
     phase_shift_up = np.cos(phases) - 1j * np.sin(phases)
 

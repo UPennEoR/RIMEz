@@ -2,22 +2,20 @@
 # Copyright (c) 2019 UPennEoR
 # Licensed under the MIT License
 
-import numpy as np
+import h5py
+import healpy as hp
 import numba as nb
+import numpy as np
+import ssht_numba as sshtn
 from scipy import interpolate
 
-import h5py
-
-import ssht_numba as sshtn
+from . import utils
 
 try:
     import pygsm
 except ImportError:
     pygsm = None
 
-import healpy as hp
-
-from . import utils
 
 # simple made-up point source catalog generation, with GLEAM-ish dN/dS and spectral indices
 
@@ -191,28 +189,7 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     return Ilm
 
 
-# def point_sources_Ilm(I, RA, dec, L):
-#     RA = np.array(RA)
-#     dec = np.array(dec)
-#     codec = np.pi/2. - dec
-#
-#     delta = sshtn.generate_dl(np.pi/2., L)
-#
-#     Ilm = np.zeros((I.shape[0], L**2), dtype=np.complex128)
-#     for ell in range(L):
-#         m = np.arange(-ell, ell+1)
-#         indices = sshtn.elm2ind(ell, m)
-#
-#         for ii in range(RA.shape[0]):
-#             Ilm[:, indices] += I[:, ii, None] * np.conj(spin0_spherical_harmonics(ell, codec[ii], RA[ii], delta))
-#
-#     return Ilm
-
-# GLEAM
-
 # diffuse sky model generation
-
-
 def hp2ssht_index(hp_flm_in, lmax=None):
     """
     Map from healpy indexed harmonic coefficients to ssht index.
@@ -261,8 +238,6 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
 
     Jy_per_K = A_Jy * 2 * k_b * (nu_axis * 1e6 / c) ** 2.0
 
-    # R_g2c = hp.rotator.Rotator(coord=['G','C']).mat
-
     R_g2c = utils.get_galactic_to_gcrs_rotation_matrix()
 
     gsm8 = pygsm.GlobalSkyModel(
@@ -271,22 +246,11 @@ def diffuse_sky_model_from_GSM2008(nu_axis, smooth_deg=0.0, ssht_index=True):
 
     I_init = Jy_per_K[:, None] * gsm8.generate(nu_axis)
 
-    # rI_init = np.zeros_like(I_init)
-    #
-    # for ii in range(I_init.shape[0]):
-    #     rI_init[ii] = linear_interp_rotation(I_init[ii], R_g2c.T)
-
     lmax = 3 * 512 // 2
     Ilm_init = hp.map2alm(I_init, lmax=lmax, pol=False, use_pixel_weights=True)
 
     for i in range(Ilm_init.shape[0]):
         hp.rotate_alm(Ilm_init[i, :], matrix=R_g2c, lmax=lmax)
-
-    # if smooth_deg != 0.:
-    #     fwhm = np.radians(smooth_deg)
-    #
-    #     Ilm_init = hp.smoothalm(Ilm_init, fwhm=fwhm, pol=False, verbose=False, inplace=True)
-    #
 
     if ssht_index:
         flm = hp2ssht_index(Ilm_init, lmax=lmax)
@@ -317,38 +281,6 @@ def diffuse_sky_model_egsm_preview(nu_axis):
         Ilm[:, ii] = np.array(interpolate.splev(nu_axis, tck_re)) + 1j * np.array(
             interpolate.splev(nu_axis, tck_im)
         )
-
-    # rbf interpolation (sinc or gaussian) - too slow with this many spatial modes!
-    # delta_nu_in = np.diff(freqs)[0]
-    #
-    # def sinc_kernel(self, r):
-    #     tau_c = 1./(2*self.epsilon)
-    #
-    #     r = np.where(r == 0, 1e-20, r)
-    #     y = 2*np.pi*tau_c*r
-    #     kernel = np.sin(y)/y
-    #     return kernel
-    #
-    # def rbf_obj(data):
-    #     rbf = interpolate.Rbf(freqs, data,
-    #                         function='gaussian',
-    #                         epsilon=delta_nu_in,
-    #                         smooth=0.)
-    #     return rbf
-    #
-    # Ilm = np.zeros((nu_axis.size, Ilm_init.shape[1]), dtype=np.complex128)
-    # for ii in range(Ilm.shape[1]):
-    #
-    #     Ilm_re_intp = rbf_obj(Ilm_init[:,ii].real)
-    #     Ilm_im_intp = rbf_obj(Ilm_init[:,ii].imag)
-    #
-    #     Ilm[:,ii] = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
-
-    # 3rd order spline
-    # Ilm_re_intp = interpolate.interp1d(freqs, Ilm_init.real, kind='cubic', axis=0)
-    # Ilm_im_intp = interpolate.interp1d(freqs, Ilm_init.imag, kind='cubic', axis=0)
-    #
-    # Ilm = Ilm_re_intp(nu_axis) + 1j*Ilm_im_intp(nu_axis)
 
     return Ilm
 
@@ -383,7 +315,7 @@ def linear_interp_rotation(hmap, R):
     return hp.get_interp_val(hmap, t, p)
 
 
-#### old thing
+# old thing
 def diffuse_sky_model(nu_axis, R_g2c=None, ssht_index=True, smth_deg=0.0):
     if pygsm is None:
         raise ImportError(

@@ -48,7 +48,6 @@ using the environment variable ``FFTW_PATH``, which should be the path to the
 
   $ FFTW_PATH=/usr/lib pip install .
 
-
 User Install
 ------------
 If you just want to install ``RIMEz`` for general use, install with::
@@ -60,4 +59,24 @@ Developer Install
 If you are developing ``RIMEz``, clone the repo, install the dependencies as
 above, and then do (in the repo)::
 
-  $ pip install -e .[dev]
+  $ pip install -e ".[all,dev]"
+
+
+Optional Extras
+---------------
+There are a number of optional extras that can be installed along with `RIMEz`,
+including `gsm` (which permits using the GSM as a sky model). To use all (user-focused)
+optional extras, install with ``pip install ".[all]"``, otherwise you can pick and
+choose by using a comma-separated list in the square brackets.
+
+There are also a number of development-related groups of optional extras. If you are
+developing, we recommend using *all* of them by installing the ``dev`` extra
+(as specified above).
+
+Development
+===========
+To install `RIMEz` for development, see above.
+
+Testing
+-------
+To run tests locally, use

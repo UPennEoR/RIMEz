@@ -6,15 +6,11 @@ import os
 import warnings
 
 import h5py
-
 import numpy as np
-
-from . import utils
-from . import rime_funcs
-from . import sky_models
-
-import ssht_numba as sshtn
 import spin1_beam_model as s1b
+import ssht_numba as sshtn
+
+from . import rime_funcs, sky_models, utils
 
 
 def _get_versions():
@@ -228,35 +224,6 @@ class VisibilityCalculation(object):
 
         uvd.write_uvh5(uvdata_file_path, clobber=clobber)
 
-    # def write_uvdata_time_series(self,
-    #         uvdata_file_path,
-    #         clobber=False,
-    #         instrument='RIMEz calculation',
-    #         telescope_name='probably HERA, but who knows?',
-    #         history='',
-    #         object_name=''):
-    #
-    #     if getattr(self, 'V', None) is None:
-    #         raise ValueError("No visibility data available for writing.")
-    #
-    #     uvd = utils.uvdata_from_sim_data(
-    #             self.array_latitude,
-    #             self.array_longitude,
-    #             self.array_height,
-    #             self.time_sample_jds,
-    #             self.frequency_samples_hz,
-    #             self.antenna_positions_meters,
-    #             self.antenna_pairs_used,
-    #             self.V,
-    #             integration_time=self.integration_time,
-    #             instrument=instrument,
-    #             telescope_name=telescope_name,
-    #             history=history,
-    #             object_name=object_name,
-    #     )
-    #
-    #     uvd.write_uvh5(uvdata_file_path, clobber=clobber)
-
 
 class PointSourceSpectraSet(object):
     """
@@ -297,7 +264,7 @@ class PointSourceSpectraSet(object):
     ):
         if file_path is None:
 
-            if any([x is None for x in [nu_mhz, Iflux, RA, Dec]]):
+            if any(x is None for x in [nu_mhz, Iflux, RA, Dec]):
                 raise ValueError(
                     "One of the inputs (nu_mhz, Iflux, RA, Dec) has not been provided."
                 )

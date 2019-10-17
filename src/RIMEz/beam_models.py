@@ -2,10 +2,10 @@
 # Copyright (c) 2019 UPennEoR
 # Licensed under the MIT License
 
-import numpy as np
-import numba as nb
 import ctypes
 
+import numba as nb
+import numpy as np
 from spin1_beam_model.jones_matrix_field import AntennaFarFieldResponse
 
 from .dfitpack_numba import bispeu_nb
@@ -115,7 +115,6 @@ def construct_spline_beam_func(
 
         J_aa = np.zeros(theta.shape + (2, 2), dtype=nb.complex128)
         u = [-1.0, -1j]  # negative for components in alt/az basis
-        #         u = [1., 1j]
 
         for kk in range(2):
             for aa in range(2):
@@ -177,7 +176,6 @@ def airy_dipole(nu, alt, az, a):
     zero_inds = np.where(arg == 0.0)[0]
     arg[zero_inds] = 1e-20
     G = 2.0 * njit_J1(arg) / arg
-    #     G = np.ones_like(arg)
 
     # '00' <-> 'East,Alt', '01' <-> 'East,Az',
     # '10' <-> 'North,Alt', '11' <-> 'North,Az'
@@ -221,7 +219,6 @@ def heraish_beam_func(i, nu, alt, az):
     Umat[:, 0, 0], Umat[:, 0, 1] = cosX, sinX
     Umat[:, 1, 0], Umat[:, 1, 1] = sinX, -cosX
 
-    # J_eq = np.einsum('...ab,...cb->...ac', J_aa, Umat)
     result = apply_basis_transform(J_aa, Umat)
     tukeyW = tukey_window(alt, np.radians(2.0))
     for n in range(result.shape[0]):

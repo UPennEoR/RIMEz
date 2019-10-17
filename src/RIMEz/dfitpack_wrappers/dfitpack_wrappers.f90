@@ -10,7 +10,7 @@ contains
 
 
     subroutine bispeu_wrap(tx,nx,ty,ny,c,kx,ky,x,y,z,m,wrk,lwrk,ier) bind(c)
-      integer(4), intent(in) :: nx,ny,kx,ky,m,lwrk 
+      integer(4), intent(in) :: nx,ny,kx,ky,m,lwrk
       real(8),    intent(in) :: tx(nx),ty(ny),c((nx-kx-1)*(ny-ky-1)),&
           x(m),y(m),wrk(lwrk)
       integer(4), intent(out) :: ier
