@@ -2,7 +2,14 @@
 Changelog
 =========
 
-Version 0.2dev
-==============
-This is the first working version that is easily-installable, is covered with tests
-and has standardised documentation.
+Unreleased
+==========
+
+Added
+~~~~~
+* Multiple package tooling updates.
+
+
+Version 0.1.1
+=============
+Easily installable version.
