@@ -31,11 +31,18 @@ source (like MacPorts or Homebrew), you may have to create a symlink called
 If you are a ``conda`` user, you may wish to manually install the following
 dependencies with ``conda`` so they are not installed with ``pip``::
 
-  $ conda install numpy numba cffi gitpython h5py scipy
+  $ conda install numpy numba cffi h5py scipy astropy
+
+If you are happy to use the `conda-forge` channel, you can additionally do::
+
+  $ conda install -c conda-forge pyuvdata healpy
 
 Then, installation should be as simple as ``pip install .`` from the top-level
-directory, or ``pip install git+git://github.com/UPennEoR/RIMEz``. If you
-installed ``FFTW`` to a non-default location, then you can point to its location
+directory, or ``pip install git+git://github.com/UPennEoR/RIMEz``. Note that the
+above manual installation of dependencies via `conda` is entirely optional -- simply
+doing ``pip install .`` should work regardless.
+
+If you installed ``FFTW`` to a non-default location, then you can point to its location
 using the environment variable ``FFTW_PATH``, which should be the path to the
 ``lib`` folder, e.g.::
 

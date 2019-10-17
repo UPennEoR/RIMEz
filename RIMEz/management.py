@@ -5,13 +5,9 @@
 import os
 import warnings
 
-import git
 import h5py
 
 import numpy as np
-
-import ssht_numba as sshtn
-
 
 from . import utils
 from . import rime_funcs
