@@ -65,7 +65,7 @@ above, and then do (in the repo)::
 Optional Extras
 ---------------
 There are a number of optional extras that can be installed along with ``RIMEz``,
-including `gsm` (which permits using the GSM as a sky model). To use all (user-focused)
+including ``gsm`` (which permits using the GSM as a sky model). To use all (user-focused)
 optional extras, install with ``pip install ".[all]"``, otherwise you can pick and
 choose by using a comma-separated list in the square brackets.
 
