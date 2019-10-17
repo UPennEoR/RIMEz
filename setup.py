@@ -14,7 +14,7 @@ req = [
     "numpy",
     "numba",
     "cffi",
-    'astropy',
+    "astropy",
     "h5py",
     "scipy",
     "healpy",
