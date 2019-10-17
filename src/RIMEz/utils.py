@@ -4,19 +4,17 @@
 
 from functools import reduce
 
+import healpy as hp
 import numpy as np
-from scipy import optimize, linalg
+import pyuvdata
+import ssht_numba as sshtn
+from astropy import _erfa
 from astropy import coordinates as coord
 from astropy import units
-from astropy import _erfa
 from astropy.time import Time
-
-import healpy as hp
-import pyuvdata
 from pyuvdata import UVData
 from pyuvdata.utils import polstr2num
-
-import ssht_numba as sshtn
+from scipy import linalg, optimize
 from spin1_beam_model.cst_processing import ssht_power_spectrum
 
 from .beam_models import az_shiftflip
@@ -59,8 +57,7 @@ def b_arc(b, precision=3):
     if b[0] == 0.0 and b[1] == 0.0:
         arc = np.nan
     else:
-        if b[0] == 0.0:
-            # i.e. b[1]/b[0] is -np.inf or np.inf
+        if b[0] == 0.0:  # i.e. b[1]/b[0] is -np.inf or np.inf
             arc = np.pi / 2.0
         else:
             b_grp = np.around(np.linalg.norm(b), precision)
@@ -248,8 +245,6 @@ def get_rotations_realistic_from_JDs(jd_axis, array_location):
     p2 = np.array([0.0, 1.0, 0.0])
     p3 = np.array([0.0, 0.0, 1.0])
 
-    #     jd_axis = map(lambda era: era2JD(era, JD_INIT), era_axis)
-
     JDs = Time(jd_axis, format="jd", scale="ut1")
 
     rotations_axis = np.zeros((JDs.size, 3, 3), dtype=np.float)
@@ -351,8 +346,8 @@ def get_galactic_to_gcrs_rotation_matrix():
     # as measured by the Frobenius norm.
     Rt, _ = linalg.orthogonal_procrustes(M, np.eye(3))
 
+    # The 3D rotation matrix that defines the coordinate transformation.
     R_g2gcrs = np.transpose(Rt)
-    # R_g2gcrs = np.array(axes_gal.cartesian.xyz).T # The 3D rotation matrix that defines the coordinate transformation.
     return R_g2gcrs
 
 
@@ -450,7 +445,6 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     # frequency
     ell_peak_est = np.ceil(2 * np.pi * nu_hz / c_mps * np.linalg.norm(b_m)).astype(int)
 
-    # L_use = 3*ell_peak_est/2
     L_use = 2 * ell_peak_est
 
     # for HERA-sized beam widths this will be sufficient. Significantly narrower
@@ -656,11 +650,6 @@ def inflate_uvdata_redundancies(uvd, red_gps):
     """
     red_gps is a list of lists of redundant groups of uvdata baseline numbers
     """
-    #
-    # antenna_positions, antenna_numbers = uvd.get_ENU_antpos()
-    #
-    # red_gps, centers, lengths = pyuvdata.utils.get_antenna_redundancies(
-    #     antenna_numbers, antenna_positions, tol=tol, include_autos=include_autos)
 
     # number of baselines in the inflated dataset
     Nbls_full = reduce(lambda x, y: x + y, map(len, red_gps))

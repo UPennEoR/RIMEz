@@ -4,9 +4,9 @@
 
 import os
 
-import numpy as np
-import numba as nb
 import cffi
+import numba as nb
+import numpy as np
 
 ffi = cffi.FFI()
 
