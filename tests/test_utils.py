@@ -28,14 +28,18 @@ def test_kernel_cutoff_estimate():
     """Test kernel_cutoff_estimate"""
     max_bl = 875.0  # meters
     max_freq = 2.5e6  # hertz
-    width_estimate = 99
+    width_estimate = 100
     c_mks = const.c.to("m/s").value
     max_ell = 2 * np.pi * max_freq * max_bl / c_mks
     max_ell = int(np.ceil(max_ell + width_estimate))
-    # need to add 1 to max_ell for values above because function always returns
+    ell_cutoff = utils.kernel_cutoff_estimate(max_bl, max_freq, width_estimate)
+    assert ell_cutoff == max_ell
+
+    width_estimate = 101
+    # need to add 2 to max_ell for values above because function always returns
     # an even value
-    max_ell += 1
-    ell_cutoff = utils.kernel_cutoff_estimate(max_bl, max_freq)
+    max_ell += 2
+    ell_cutoff = utils.kernel_cutoff_estimate(max_bl, max_freq, width_estimate)
     assert ell_cutoff == max_ell
 
     return
