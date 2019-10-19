@@ -38,7 +38,7 @@ conda install pytest pytest-runner coverage flake8 numpy numba cffi astropy h5py
 conda install -c conda-forge healpy pyuvdata
 pip install git+https://github.com/UPennEoR/ssht_numba.git
 pip install git+https://github.com/UPennEoR/spin1_beam_model.git
-pip install pytest-cov codecov
+pip install pytest-cov codecov pre-commit
 
 # Install this package
 pip install .
