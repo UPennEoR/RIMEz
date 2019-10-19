@@ -9,6 +9,7 @@ import numpy as np
 import pyuvdata
 import ssht_numba as sshtn
 from astropy import _erfa
+from astropy import constants as const
 from astropy import coordinates as coord
 from astropy import units
 from astropy.time import Time
@@ -35,7 +36,7 @@ def coords_to_location(array_lat, array_lon, array_height):
 
 
 def kernel_cutoff_estimate(max_baseline_length_meters, max_freq_hz, width_estimate=100):
-    c_mps = 299792458.0
+    c_mps = const.c.to("m/s").value
     ell_peak_est = 2 * np.pi * max_freq_hz * max_baseline_length_meters / c_mps
 
     ell_cutoff = int(np.ceil(ell_peak_est + width_estimate))
@@ -437,7 +438,7 @@ def beam_func_to_kernel_power_spectrum(nu_hz, b_m, beam_func):
     by setting the baseline length to zero, or the angular power spectrum
     of just the fringe by inputing a beam_func that returns 1 everywhere.
     """
-    c_mps = 299792458.0  # meter/second
+    c_mps = const.c.to("m/s").value
 
     b_m = b_m * np.array([1.0, 0, 0])
 
