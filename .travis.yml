@@ -1,37 +1,25 @@
 # Travis configuration file using the build matrix feature
 # Read more under http://docs.travis-ci.com/user/build-configuration/
-# THIS SCRIPT IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
 
-sudo: false
-language: python
-virtualenv:
-  system_site_packages: false
-matrix:
-  fast_finish: true
-  include:
-    - python: 3.6
-      env: DISTRIB="ubuntu" TOX_PYTHON_VERSION="py36" COVERAGE="true"
-    - python: 3.7
-      env: DISTRIB="ubuntu" TOX_PYTHON_VERSION="py37" COVERAGE="true"
-    - python: 3.6
-      env: DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="false"
-    - python: 3.7
-      env: DISTRIB="ubuntu" TOXENV=lint COVERAGE="false"
+sudo: required
+language: generic
+env:
+  matrix:
+    - PYTHON_VERSION=3.6
+    - PYTHON_VERSION=3.7
+    - PYTHON_VERSION=3.7 LINTER=true
 install:
+  - sudo apt-get update
+  - sudo apt-get install fftw3
   - source tests/travis_install.sh
 script:
-  - tox
   - |
-    if [[ "$COVERAGE" == "true" ]]; then
+    if [[ "$LINTER" == "true" ]]; then
+      flake8 .
       pre-commit install
       pre-commit run --all-files
+    else
+      pytest
     fi
 after_success:
-  - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
-after_script:
-  - codecov
-  - travis-cleanup
-cache:
-  pip: true
-  directories:
-    - $HOME/miniconda
+  - if [[ "$LINTER" != "true" ]]; then codecov || echo "failed"; fi

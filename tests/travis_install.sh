@@ -5,12 +5,11 @@
 # in the .travis.yml in the top level folder of the project.
 #
 # This script is inspired by Scikit-Learn (http://scikit-learn.org/)
-#
-# THIS SCRIPT IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
 
 set -e
 
-if [[ "$DISTRIB" == "conda" ]]; then
+# Determine whether to install full env or just flake8
+if [[ "$LINTER" != "true" ]]; then
     # Deactivate the travis-provided virtual environment and setup a
     # conda-based environment instead
     deactivate
@@ -26,7 +25,7 @@ if [[ "$DISTRIB" == "conda" ]]; then
         # Use the miniconda installer for faster download / install of conda
         # itself
         wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-            -O miniconda.sh
+             -O miniconda.sh
         chmod +x miniconda.sh && ./miniconda.sh -b -p $HOME/miniconda
     fi
     export PATH=$HOME/miniconda/bin:$PATH
@@ -38,24 +37,13 @@ if [[ "$DISTRIB" == "conda" ]]; then
     # (prefer local venv, since the miniconda folder is cached)
     conda create -p ./.venv --yes python=${PYTHON_VERSION} pip virtualenv
     source activate ./.venv
+
+    # Install dependencies
+    conda install pytest pytest-runner coverage numpy numba cffi astropy h5py scipy
+    conda install -c conda-forge healpy pyuvdata
+    pip install git+https://github.com/UPennEoR/ssht_numba.git
+    pip install git+https://github.com/UPennEoR/spin1_beam_model.git
+    pip install pytest-cov codecov
+else
+    pip install flake8
 fi
-
-# for all
-pip install -U pip setuptools
-pip install tox
-
-if [[ "$COVERAGE" == "true" ]]; then
-    pip install -U pytest-cov pytest-virtualenv coverage codecov flake8 pre-commit pytest
-fi
-
-
-travis-cleanup() {
-    printf "Cleaning up environments ... "  # printf avoids new lines
-    if [[ "$DISTRIB" == "conda" ]]; then
-        # Force the env to be recreated next time, for build consistency
-        source deactivate
-        conda remove -p ./.venv --all --yes
-        rm -rf ./.venv
-    fi
-    echo "DONE"
-}
