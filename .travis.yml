@@ -20,7 +20,6 @@ matrix:
 install:
   - source tests/travis_install.sh
 script:
-  - python setup.py develop
   - tox
   - |
     if [[ "$COVERAGE" == "true" ]]; then
