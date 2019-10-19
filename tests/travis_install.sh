@@ -39,3 +39,6 @@ conda install -c conda-forge healpy pyuvdata
 pip install git+https://github.com/UPennEoR/ssht_numba.git
 pip install git+https://github.com/UPennEoR/spin1_beam_model.git
 pip install pytest-cov codecov
+
+# Install this package
+pip install .
