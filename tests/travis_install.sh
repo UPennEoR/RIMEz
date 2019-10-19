@@ -24,22 +24,18 @@ else
 fi
 export PATH=$HOME/miniconda/bin:$PATH
 # Make sure to use the most updated version
-conda update --yes conda
+conda config --set always_yes yes --set changeps1 no
+conda update -q conda
 
 # Configure the conda environment and put it in the path using the
 # provided versions
 # (prefer local venv, since the miniconda folder is cached)
-conda create -p ./.venv --yes python=${PYTHON_VERSION} pip virtualenv
-source activate ./.venv
+conda create -n test_env python=${PYTHON_VERSION}
+source activate test_env
 
-# Determine whether to install full env or just flake8
-if [[ "$LINTER" == "true" ]]; then
-    pip install flake8
-else
-    # Install dependencies
-    conda install pytest pytest-runner coverage numpy numba cffi astropy h5py scipy
-    conda install -c conda-forge healpy pyuvdata
-    pip install git+https://github.com/UPennEoR/ssht_numba.git
-    pip install git+https://github.com/UPennEoR/spin1_beam_model.git
-    pip install pytest-cov codecov
-fi
+# Install dependencies
+conda install pytest pytest-runner coverage flake8 numpy numba cffi astropy h5py scipy pip
+conda install -c conda-forge healpy pyuvdata
+pip install git+https://github.com/UPennEoR/ssht_numba.git
+pip install git+https://github.com/UPennEoR/spin1_beam_model.git
+pip install pytest-cov codecov

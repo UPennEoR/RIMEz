@@ -7,19 +7,14 @@ env:
   matrix:
     - PYTHON_VERSION=3.6
     - PYTHON_VERSION=3.7
-    - PYTHON_VERSION=3.7 LINTER=true
 install:
   - sudo apt-get update
   - sudo apt-get install fftw3
   - source tests/travis_install.sh
 script:
-  - |
-    if [[ "$LINTER" == "true" ]]; then
-      flake8 .
-      pre-commit install
-      pre-commit run --all-files
-    else
-      pytest
-    fi
+  - pytest
+  - flake8 .
+  - pre-commit install
+  - pre-commit run --all-files
 after_success:
-  - if [[ "$LINTER" != "true" ]]; then codecov || echo "failed"; fi
+  - codecov
