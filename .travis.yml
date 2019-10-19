@@ -9,7 +9,7 @@ env:
     - PYTHON_VERSION=3.7
 install:
   - sudo apt-get update
-  - sudo apt-get install fftw3
+  - sudo apt-get install fftw3 libfftw3-dev
   - source tests/travis_install.sh
 script:
   - pytest
