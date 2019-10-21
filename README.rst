@@ -5,8 +5,8 @@ RIMEz
 .. start-badges
 .. image:: https://travis-ci.org/UPennEOR/RIMEz.svg
     :target: https://travis-ci.org/UPennEOR/RIMEz
-.. image:: https://coveralls.io/repos/github/UPennEOR/RIMEz/badge.svg
-    :target: https://coveralls.io/github/UPennEOR/RIMEz
+.. image:: https://codecov.io/gh/UPennEoR/RIMEz/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/UPennEoR/RIMEz
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 .. image:: https://readthedocs.org/projects/rimez/badge/?version=latest
