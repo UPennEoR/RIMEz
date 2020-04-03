@@ -185,26 +185,29 @@ def airy_dipole(nu, alt, az, a):
     return J
 
 
-@nb.njit
-def gaussian_dipole(alt, az, a):
+# Try to get gaussian_dipole to work with indexing and frequency (even though
+# they don't actually get used) for numba
+def make_gaussian_dipole(a):
+    @nb.njit
+    def gaussian_dipole(i, nu, alt, az):
 
-    salt = np.sin(alt)
-    caz, saz = np.cos(az), np.sin(az)
+        salt = np.sin(alt)
+        caz, saz = np.cos(az), np.sin(az)
 
-    J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
+        J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
 
-    # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
-    # of the first kind
+        # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
+        # of the first kind
 
-    G = np.exp(-((np.pi / 2.0 - alt) ** 2.0) / 2.0 / a ** 2.0)
+        G = np.exp(-((np.pi / 2.0 - alt) ** 2.0) / 2.0 / a ** 2.0)
 
-    # '00' <-> 'East,Alt', '01' <-> 'East,Az',
-    # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-    J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
-    J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        # '00' <-> 'East,Alt', '01' <-> 'East,Az',
+        # '10' <-> 'North,Alt', '11' <-> 'North,Az'
+        J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+        J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
-    return J
-
+        return J
+    return gaussian_dipole
 
 @nb.njit
 def heraish_beam_func(i, nu, alt, az):
