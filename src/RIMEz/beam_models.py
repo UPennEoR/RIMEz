@@ -161,18 +161,18 @@ def njit_J1(x):
 
 @nb.njit
 def uniform(i, nu, alt, az):
-    salt = np.sin(alt)
-    caz, saz = np.cos(az), np.sin(az)
+    """
+    Jones matrix for a uniform beam
 
+    Parameters
+    ----------
+
+    Returns
+    -------
+    J : ndarray  
+        The Jones matrix for a uniform beam, has shape (alt.shape, 2, 2)
+    """
     J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
-    
-    G = 1  # for uniform beam
-    
-    # '00' <-> 'East,Alt', '01' <-> 'East,Az',
-    # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-    # J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
-    # J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
-
     J[..., 0, 0], J[..., 0, 1] = 1, 0
     J[..., 1, 0], J[..., 1, 1] = 0, 1
 
