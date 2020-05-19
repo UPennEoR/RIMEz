@@ -34,7 +34,7 @@ conda create -n test_env python=${PYTHON_VERSION}
 source activate test_env
 
 # Install dependencies
-conda install pytest pytest-runner coverage flake8 numpy numba<0.49.0 cffi astropy h5py scipy pip
+conda install pytest pytest-runner coverage flake8 numpy "numba<0.49.0" cffi astropy h5py scipy pip
 conda install -c conda-forge healpy pyuvdata
 pip install git+https://github.com/UPennEoR/ssht_numba.git
 pip install git+https://github.com/UPennEoR/spin1_beam_model.git
