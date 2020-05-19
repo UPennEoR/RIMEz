@@ -204,6 +204,7 @@ def make_airy_dipole(a):
         J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
         return J
+    return airy_dipole
 
 
 # Try to get gaussian_dipole to work with indexing and frequency (even though
