@@ -179,30 +179,31 @@ def uniform(i, nu, alt, az):
     return J
 
 
-@nb.njit
-def airy_dipole(nu, alt, az, a):
-    c = 299792458.0
-    k = 2 * np.pi * nu / c
-    ka = k * a
-    calt, salt = np.cos(alt), np.sin(alt)
-    caz, saz = np.cos(az), np.sin(az)
+def make_airy_dipole(a):
+    @nb.njit
+    def airy_dipole(i, nu, alt, az):
+        c = 299792458.0
+        k = 2 * np.pi * nu / c
+        ka = k * a
+        calt, salt = np.cos(alt), np.sin(alt)
+        caz, saz = np.cos(az), np.sin(az)
 
-    J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
+        J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
 
-    # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
-    # of the first kind
+        # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
+        # of the first kind
 
-    arg = ka * calt
-    zero_inds = np.where(arg == 0.0)[0]
-    arg[zero_inds] = 1e-20
-    G = 2.0 * njit_J1(arg) / arg
+        arg = ka * calt
+        zero_inds = np.where(arg == 0.0)[0]
+        arg[zero_inds] = 1e-20
+        G = 2.0 * njit_J1(arg) / arg
 
-    # '00' <-> 'East,Alt', '01' <-> 'East,Az',
-    # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-    J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
-    J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        # '00' <-> 'East,Alt', '01' <-> 'East,Az',
+        # '10' <-> 'North,Alt', '11' <-> 'North,Az'
+        J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+        J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
-    return J
+        return J
 
 
 # Try to get gaussian_dipole to work with indexing and frequency (even though
