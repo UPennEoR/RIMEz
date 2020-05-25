@@ -83,7 +83,7 @@ def spin0_spherical_harmonics(ell, theta, phi, delta):
     return Y_elm
 
 
-def point_sources_harmonics(I, RA, dec, L, ell_min=0):
+def point_sources_harmonics(flux_density, ra, dec, L, ell_min=0):
     """
     Compute the spherical harmonic coefficents for a set of point sources.
 
@@ -93,12 +93,12 @@ def point_sources_harmonics(I, RA, dec, L, ell_min=0):
 
     Parameters
     ----------
-    I : float, 2d-array, shape (Nfreq, Nsrc)
+    flux_density : float, 2d-array, shape (Nfreq, Nsrc)
         The flux in Jansky for each source at each frequency. The first axis
         indexes frequency channels, the second axis indexes sources i.e. `I[:,0]`
         is the flux density spectrum of the 0th source.
 
-    RA : float, 1d-array, shape (Nsrc,)
+    ra : float, 1d-array, shape (Nsrc,)
         The right ascension of each source, in radians (angle in [0, 2*pi)).
 
     dec : float, 1d-array, shape (Nsrc,)
@@ -116,21 +116,21 @@ def point_sources_harmonics(I, RA, dec, L, ell_min=0):
         The harmonic coefficients, summed over sources.
     """
 
-    RA = np.array(RA)
+    ra = np.array(ra)
     dec = np.array(dec)
 
     delta = sshtn.generate_dl(np.pi / 2.0, L)
 
-    Ilm = inner_point_source_harmonics(I, RA, dec, L, ell_min, delta)
+    Ilm = inner_point_source_harmonics(flux_density, ra, dec, L, ell_min, delta)
     return Ilm
 
 
 @nb.njit
-def inner_point_source_harmonics(I, RA, dec, L, ell_min, delta):
+def inner_point_source_harmonics(flux_density, ra, dec, L, ell_min, delta):
 
     codec = np.pi / 2 - dec
 
-    Ilm = np.zeros((I.shape[0], L ** 2 - ell_min ** 2), dtype=np.complex128)
+    Ilm = np.zeros((flux_density.shape[0], L ** 2 - ell_min ** 2), dtype=np.complex128)
 
     for ell in range(ell_min, L):
         m = np.arange(-ell, ell + 1)
@@ -138,20 +138,20 @@ def inner_point_source_harmonics(I, RA, dec, L, ell_min, delta):
             sshtn.elm2ind(ell, m) - ell_min ** 2
         )  # shift indices incase ell_min is not zero
 
-        for ii in range(RA.shape[0]):
+        for ii in range(ra.shape[0]):
             Ylm_conj_ii = np.conj(
-                spin0_spherical_harmonics(ell, codec[ii], RA[ii], delta)
+                spin0_spherical_harmonics(ell, codec[ii], ra[ii], delta)
             )
 
             for kk in range(Ilm.shape[0]):
                 for jj in range(m.size):
 
-                    Ilm[kk, indices[jj]] += I[kk, ii] * Ylm_conj_ii[jj]
+                    Ilm[kk, indices[jj]] += flux_density[kk, ii] * Ylm_conj_ii[jj]
 
     return Ilm
 
 
-def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
+def threaded_point_sources_harmonics(flux_density, ra, dec, L, ell_min=0, n_blocks=2):
     """
     Same inputs/outputs as `point_sources_harmonics`.
 
@@ -159,17 +159,17 @@ def threaded_point_sources_harmonics(I, RA, dec, L, ell_min=0, N_blocks=2):
     computation is ~2 times faster than running in a single thread. Something
     to do with memory and inefficient looping over `sshtn.dl_m`?
     """
-    RA = np.array(RA)
+    ra = np.array(ra)
     dec = np.array(dec)
 
     delta = sshtn.generate_dl(np.pi / 2.0, L)
 
-    I_split = list(np.array_split(I, N_blocks, axis=1))
-    RA_split = list(np.array_split(RA, N_blocks))
-    dec_split = list(np.array_split(dec, N_blocks))
+    I_split = list(np.array_split(flux_density, n_blocks, axis=1))
+    RA_split = list(np.array_split(ra, n_blocks))
+    dec_split = list(np.array_split(dec, n_blocks))
 
     Ilm_split = np.zeros(
-        (N_blocks, I.shape[0], L ** 2 - ell_min ** 2), dtype=np.complex128
+        (n_blocks, flux_density.shape[0], L ** 2 - ell_min ** 2), dtype=np.complex128
     )
 
     @nb.njit(nogil=True, parallel=True)

@@ -294,14 +294,14 @@ class PointSourceSpectraSet(object):
         if self.Ilm is None:
             self.L = L
             self.Ilm = sky_models.threaded_point_sources_harmonics(
-                self.Iflux, self.RA, self.Dec, self.L, N_blocks=N_blocks
+                self.Iflux, self.RA, self.Dec, self.L, n_blocks=N_blocks
             )
         else:
             L0 = self.L
             self.L = L
 
             Ilm_new = sky_models.threaded_point_sources_harmonics(
-                self.Iflux, self.RA, self.Dec, self.L, ell_min=L0, N_blocks=N_blocks
+                self.Iflux, self.RA, self.Dec, self.L, ell_min=L0, n_blocks=N_blocks
             )
 
             Ilm_init = np.zeros((self.Ilm.shape[0], self.L ** 2), dtype=np.complex128)

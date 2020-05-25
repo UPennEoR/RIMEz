@@ -196,7 +196,7 @@ def gaussian_dipole(alt, az, a):
     # multiply by 2*J_1(arg)/arg, J_1(x) is the bessel function
     # of the first kind
 
-    G = np.exp(-(np.pi / 2.0 - alt) ** 2.0 / 2.0 / a ** 2.0)
+    G = np.exp(-((np.pi / 2.0 - alt) ** 2.0) / 2.0 / a ** 2.0)
 
     # '00' <-> 'East,Alt', '01' <-> 'East,Az',
     # '10' <-> 'North,Alt', '11' <-> 'North,Az'
