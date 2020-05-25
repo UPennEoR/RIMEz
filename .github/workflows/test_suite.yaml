@@ -44,6 +44,18 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           ./ci/install_conda.sh
+      - name: Install gfortran linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda install -c conda-forge gfortran_linux-64
+          which gfortran
+      - name: Install gfortran MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda install -c conda-forge gfortran_osx-64
+          which gfortran
       - name: Install
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
