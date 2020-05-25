@@ -50,7 +50,7 @@ jobs:
           source activate ${ENV_NAME}
           conda install pytest pytest-runner coverage flake8 numpy numba cffi astropy h5py scipy pip
           conda install -c conda-forge healpy pyuvdata fftw
-          pip install git+https://github.com/UPennEoR/ssht_numba.git
+          CPATH=$(dirname $(which python))/../include:$CPATH LIBRARY_PATH=$(dirname $(which python))/../lib:$LIBRARY_PATH pip install git+https://github.com/UPennEoR/ssht_numba.git
           pip install git+https://github.com/UPennEoR/spin1_beam_model.git
           pip install .
       - name: Run Tests
