@@ -2,13 +2,8 @@ set -xe
 
 # install gfortran if on ubuntu
 if [ $OS == 'ubuntu-latest' ]; then
-    if [ ! -z "$WITH_SUDO" ]; then
-        sudo apt-get update
-        sudo apt-get install -y gfortran
-    else
-        apt-get update
-        apt-get install -y gfortran
-    fi
+    sudo apt-get update
+    sudo apt-get install -y gfortran
 fi
 
 conda config --set always_yes yes --set changeps1 no
