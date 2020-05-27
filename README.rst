@@ -3,8 +3,8 @@ RIMEz
 =====
 
 .. start-badges
-.. image:: https://travis-ci.org/UPennEOR/RIMEz.svg
-    :target: https://travis-ci.org/UPennEOR/RIMEz
+.. image:: https://github.com/UPennEoR/RIMEz/workflows/Tests/badge.svg
+    :target: https://github.com/UPennEOR/RIMEz/actions
 .. image:: https://codecov.io/gh/UPennEoR/RIMEz/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/UPennEoR/RIMEz
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
