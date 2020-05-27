@@ -169,7 +169,7 @@ def uniform(i, nu, alt, az):
 
     Returns
     -------
-    J : ndarray  
+    J : ndarray
         The Jones matrix for a uniform beam, has shape (alt.shape, 2, 2)
     """
     J = np.zeros(alt.shape + (2, 2), dtype=nb.complex128)
@@ -204,6 +204,7 @@ def make_airy_dipole(a):
         J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
         return J
+
     return airy_dipole
 
 
@@ -229,7 +230,9 @@ def make_gaussian_dipole(a):
         J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
 
         return J
+
     return gaussian_dipole
+
 
 @nb.njit
 def heraish_beam_func(i, nu, alt, az):
