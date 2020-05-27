@@ -237,7 +237,8 @@ def make_gaussian_dipole(a):
 @nb.njit
 def heraish_beam_func(i, nu, alt, az):
     a = 7.0
-    J_aa = airy_dipole(nu, alt, az, a)
+    airy_dipole = make_airy_dipole(a)
+    J_aa = airy_dipole(i, nu, alt, az)
 
     HERA_COLAT = 90.0 + 30.72152777777791
     R = rotation_matrix(np.array([0, 1.0, 0]), np.radians(HERA_COLAT))
