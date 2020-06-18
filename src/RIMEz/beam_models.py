@@ -179,7 +179,7 @@ def uniform(i, nu, alt, az):
     return J
 
 
-def make_airy_dipole(a):
+def make_airy_dipole(a, pol=True):
     @nb.njit
     def airy_dipole(i, nu, alt, az):
         c = 299792458.0
@@ -200,8 +200,12 @@ def make_airy_dipole(a):
 
         # '00' <-> 'East,Alt', '01' <-> 'East,Az',
         # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-        J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
-        J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        if pol:
+            J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+            J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        else:
+            J[..., 0, 0], J[..., 0, 1] = G, 0
+            J[..., 1, 0], J[..., 1, 1] = 0, G
 
         return J
 
@@ -210,7 +214,7 @@ def make_airy_dipole(a):
 
 # Try to get gaussian_dipole to work with indexing and frequency (even though
 # they don't actually get used) for numba
-def make_gaussian_dipole(a):
+def make_gaussian_dipole(a, pol=False):
     @nb.njit
     def gaussian_dipole(i, nu, alt, az):
 
@@ -226,8 +230,12 @@ def make_gaussian_dipole(a):
 
         # '00' <-> 'East,Alt', '01' <-> 'East,Az',
         # '10' <-> 'North,Alt', '11' <-> 'North,Az'
-        J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
-        J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        if pol:
+            J[..., 0, 0], J[..., 0, 1] = -saz * salt * G, caz * G
+            J[..., 1, 0], J[..., 1, 1] = -caz * salt * G, -saz * G
+        else:
+            J[..., 0, 0], J[..., 0, 1] = G, 0
+            J[..., 1, 0], J[..., 1, 1] = 0, G
 
         return J
 
